@@ -17,7 +17,11 @@ import { UsersModule } from './modules/users.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ 
+      isGlobal: true,
+      envFilePath: 'src/config/.env',
+    }),
+
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -29,7 +33,7 @@ import { UsersModule } from './modules/users.module';
         database: config.get<string>('DB_NAME', 'maintenance_system'),
         autoLoadEntities: true,
         synchronize: config.get<string>('DB_SYNCHRONIZE', 'true') === 'true',
-        logging: config.get<string>('NODE_ENV') !== 'production',
+        logging: config.get<string>('NODE_ENV') !== 'production',        
       }),
     }),
     AuthModule,

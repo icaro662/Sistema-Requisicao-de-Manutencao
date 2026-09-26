@@ -1,7 +1,7 @@
 import { Controller, Delete, Param, Post } from '@nestjs/common';
 import { UploadService } from '../services/upload.service';
 
-@Controller('upload')
+@Controller('arquivos')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
