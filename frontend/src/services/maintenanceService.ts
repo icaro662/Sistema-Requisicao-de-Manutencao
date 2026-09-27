@@ -6,6 +6,7 @@ interface UploadPhotoResponse { filename: string; path: string; mimetype: string
 export const maintenanceService = {
   dashboard: () => api.get<DashboardSummary>('/painel').then(({ data }) => data),
   report: (params?: ReportFilters) => api.get<ReportResponse>('/relatorios', { params }).then(({ data }) => data),
+  exportReport: (format: 'pdf' | 'excel', params?: ReportFilters) => api.get(`/relatorios/export-${format}`, { params, responseType: 'blob' }).then(({ data }) => data as Blob),
   requisitions: (params?: RequisitionQuery) => api.get<Paginated<Requisition>>('/requisicoes', { params }).then(({ data }) => data),
   requisition: (id: string) => api.get<Requisition>(`/requisicoes/${id}`).then(({ data }) => data),
   uploadPhoto: (file: File) => {
