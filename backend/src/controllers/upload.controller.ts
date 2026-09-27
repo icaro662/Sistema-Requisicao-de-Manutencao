@@ -1,11 +1,10 @@
-import { BadRequestException, Controller, Delete, ForbiddenException, Param, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Controller, Delete, Param, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequestUser } from '../common/interfaces/request-user.interface';
 import { multerConfig } from '../core/multer.config';
 import { isAllowedImageType } from '../core/utils/file-validation';
 import { JwtGuard } from '../core/guards/jwt.guard';
-import { UserRole } from '../models/user.entity';
 import { UploadService } from '../services/upload.service';
 
 @Controller('arquivos')
@@ -24,9 +23,9 @@ export class UploadController {
       callback(null, true);
     },
   }))
-  uploadPhoto(@UploadedFile() file: Express.Multer.File | undefined, @CurrentUser() user: RequestUser) {
+  async uploadPhoto(@UploadedFile() file: Express.Multer.File | undefined, @CurrentUser() user: RequestUser) {
     if (!file) throw new BadRequestException('Arquivo de imagem é obrigatório');
-    this.uploadService.register(file.filename, user.id);
+    await this.uploadService.register(file.filename, user.id);
 
     return {
       filename: file.filename,
@@ -38,10 +37,6 @@ export class UploadController {
 
   @Delete(':filename')
   remove(@Param('filename') filename: string, @CurrentUser() user: RequestUser) {
-    if (user.role !== UserRole.ADMIN && !this.uploadService.isOwner(filename, user.id)) {
-      throw new ForbiddenException('Você não pode remover este arquivo');
-    }
-
     return this.uploadService.remove(filename, user.id, user.role);
   }
 }
