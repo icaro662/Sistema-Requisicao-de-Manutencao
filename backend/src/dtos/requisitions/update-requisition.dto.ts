@@ -27,5 +27,9 @@ export class UpdateRequisitionDto {
 
 	@IsOptional()
 	@IsString()
+	requesterWhatsapp?: string;
+
+	@IsOptional()
+	@IsString()
 	photoUrl?: string;
 }

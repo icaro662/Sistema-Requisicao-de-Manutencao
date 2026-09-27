@@ -84,6 +84,7 @@ export class RequisitionsService {
       priority: dto.priority,
       requesterEmail: dto.requesterEmail,
       requesterPhone: dto.requesterPhone,
+      requesterWhatsapp: dto.requesterWhatsapp || null,
       photoUrl: dto.photoUrl || null,
       status: RequisitionStatus.OPEN,
     });
@@ -101,6 +102,7 @@ export class RequisitionsService {
     if (dto.priority !== undefined) requisition.priority = dto.priority;
     if (dto.requesterEmail !== undefined) requisition.requesterEmail = dto.requesterEmail;
     if (dto.requesterPhone !== undefined) requisition.requesterPhone = dto.requesterPhone;
+    if (dto.requesterWhatsapp !== undefined) requisition.requesterWhatsapp = dto.requesterWhatsapp;
     if (dto.photoUrl !== undefined) requisition.photoUrl = dto.photoUrl;
 
     return this.requisitionsRepository.save(requisition);

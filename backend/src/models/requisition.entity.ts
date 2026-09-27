@@ -34,6 +34,9 @@ export class Requisition {
   @Column({ name: 'telefone_solicitante' })
   requesterPhone: string;
 
+  @Column({ name: 'whatsapp_solicitante', type: 'varchar', length: 30, nullable: true })
+  requesterWhatsapp: string | null;
+
   @Column({ name: 'foto_url', type: 'varchar', length: 255, nullable: true })
   photoUrl: string | null;
 
