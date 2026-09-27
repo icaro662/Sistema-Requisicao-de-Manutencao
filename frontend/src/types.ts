@@ -32,6 +32,8 @@ export interface Requisition {
   updatedAt?: string;
 }
 export interface DashboardSummary { total: number; byStatus: Record<string, number> }
+export interface ReportFilters { from?: string; to?: string; locationId?: string; executorId?: string; categoryId?: string; priority?: RequisitionPriority; status?: RequisitionStatus }
+export interface ReportResponse { generatedAt: string; total: number; rows: Requisition[]; byStatus: Record<string, number> }
 export interface RequisitionQuery { status?: RequisitionStatus; priority?: RequisitionPriority; search?: string }
 export interface LoginInput { email: string; password: string }
 export interface RegisterInput { name: string; email: string; password: string; phone?: string }
