@@ -1,1 +1,4 @@
-export class DashboardDto { total: number; byStatus: Record<string, number>; }
+export class DashboardDto {
+	total: number;
+	byStatus: Record<string, number>;
+}

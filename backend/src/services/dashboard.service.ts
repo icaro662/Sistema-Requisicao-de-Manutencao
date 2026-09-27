@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Requisition } from '../models/requisition.entity';
 import { RequisitionStatus } from '../core/enums/status.enum';
 import { UserRole } from '../models/user.entity';
+import { DashboardFilterDto } from '../dtos/dashboard/dashboard-filter.dto';
 
 @Injectable()
 export class DashboardService {
@@ -12,7 +13,7 @@ export class DashboardService {
     private readonly requisitionsRepository: Repository<Requisition>,
   ) {}
 
-  async summary(userRole: string, userId: string): Promise<{ total: number; byStatus: Record<string, number> }> {
+  async summary(userRole: string, userId: string, filters: DashboardFilterDto = {}): Promise<{ total: number; byStatus: Record<string, number> }> {
     const qb = this.requisitionsRepository.createQueryBuilder('r');
 
     // Role-based filtering
@@ -21,6 +22,14 @@ export class DashboardService {
     } else if (userRole === UserRole.EXECUTOR) {
       qb.where('(r.executorId = :userId OR r.executorId IS NULL)', { userId });
     }
+
+    if (filters.from) qb.andWhere('r.createdAt >= :from', { from: filters.from });
+    if (filters.to) qb.andWhere('r.createdAt <= :to', { to: filters.to });
+    if (filters.locationId) qb.andWhere('r.locationId = :locationId', { locationId: filters.locationId });
+    if (filters.executorId) qb.andWhere('r.executorId = :executorId', { executorId: filters.executorId });
+    if (filters.categoryId) qb.andWhere('r.categoryId = :categoryId', { categoryId: filters.categoryId });
+    if (filters.priority) qb.andWhere('r.priority = :priority', { priority: filters.priority });
+    if (filters.status) qb.andWhere('r.status = :status', { status: filters.status });
 
     const requisitions = await qb.getMany();
 
