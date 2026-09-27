@@ -82,4 +82,12 @@ export class UsersService {
     const { password: _password, ...safeUser } = user;
     return safeUser;
   }
+
+  async findByResetToken(token: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { passwordResetToken: token } });
+  }
+
+  async saveUser(user: User): Promise<User> {
+    return this.usersRepository.save(user);
+  }
 }

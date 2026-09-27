@@ -50,3 +50,26 @@ export interface RegisterInput { name: string; email: string; password: string; 
 export interface CreateRequisitionInput { locationId: string; categoryId: string; description: string; priority: RequisitionPriority; requesterEmail: string; requesterPhone: string; requesterWhatsapp?: string; photoUrl?: string }
 export interface RegisterExecutionInput { executionDescription: string; materialsUsed?: string; observations?: string }
 export interface Notification { id: string; message: string; requisitionId: string; requisitionNumber: string; status: RequisitionStatus; createdAt: string; read: boolean }
+export interface ExecutionRecord {
+  id: string;
+  requisitionId: string;
+  requisition?: { id: string; number: string; description?: string; locationId?: string; categoryId?: string; priority?: RequisitionPriority };
+  executorId: string;
+  executorName: string;
+  executionDescription: string;
+  serviceDate: string;
+  materialsUsed?: string;
+  observations?: string;
+  photoUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface RegisterExecutionInput { executionDescription: string; materialsUsed?: string; observations?: string; photoUrl?: string }
+export interface RequestMaterial {
+  id: string;
+  requisitionId: string;
+  materialsNeeded: string;
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -1,12 +1,13 @@
 import { FormEvent, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { KeyRound, UserPlus, Users } from 'lucide-react';
-import { apiErrorMessage } from './services/api';
-import { maintenanceService } from './services/maintenanceService';
-import { useAuthStore } from './store/authStore';
-import type { ManagedUserInput, StaffRole } from './types';
+import { apiErrorMessage } from '../services/api';
+import { maintenanceService } from '../services/maintenanceService';
+import { useAuthStore } from '../store/authStore';
+import type { ManagedUserInput, StaffRole, UserRole } from '../types';
 
-const roleLabels: Record<StaffRole, string> = {
+const roleLabels: Record<UserRole, string> = {
+  solicitante: 'Solicitante',
   executor: 'Executor',
   gestor: 'Gestor',
   admin: 'Administrador',

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ClipboardList, Search } from 'lucide-react';
-import { maintenanceService } from './services/maintenanceService';
-import { useAuthStore } from './store/authStore';
-import type { Requisition, RequisitionStatus } from './types';
+import { maintenanceService } from '../services/maintenanceService';
+import { useAuthStore } from '../store/authStore';
+import type { Requisition, RequisitionStatus } from '../types';
 
 const statusLabels: Record<RequisitionStatus, string> = {
   aberta: 'Aberta',

@@ -1,11 +1,12 @@
 import { FormEvent, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClipboardList, MapPin, Tag } from 'lucide-react';
-import { apiErrorMessage } from './services/api';
-import { maintenanceService } from './services/maintenanceService';
-import { useAuthStore } from './store/authStore';
-import type { Category, Location, RequisitionPriority } from './types';
-import { validateRequisitionForm, type FieldError } from './utils/validation';
+import { apiErrorMessage } from '../services/api';
+import { maintenanceService } from '../services/maintenanceService';
+import { useAuthStore } from '../store/authStore';
+import { useToast } from '../components/Toast';
+import type { Category, Location, RequisitionPriority } from '../types';
+import { validateRequisitionForm, type FieldError } from '../utils/validation';
 
 const priorityOptions: { value: RequisitionPriority; label: string }[] = [
   { value: 'baixa', label: 'Baixa' },
@@ -17,6 +18,7 @@ const priorityOptions: { value: RequisitionPriority; label: string }[] = [
 export default function CreateRequisitionPage() {
   const currentUser = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const locationsQuery = useQuery({ queryKey: ['locations'], queryFn: maintenanceService.locations });
   const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: maintenanceService.categories });
 
@@ -29,7 +31,6 @@ export default function CreateRequisitionPage() {
   });
   const [photo, setPhoto] = useState<File | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldError>({});
-  const [error, setError] = useState('');
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -48,16 +49,15 @@ export default function CreateRequisitionPage() {
       }
     },
     onSuccess: () => {
-      setError('');
+      showToast('Requisição criada com sucesso!', 'success');
       void queryClient.invalidateQueries({ queryKey: ['requisitions'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (reason) => setError(apiErrorMessage(reason)),
+    onError: (reason) => showToast(apiErrorMessage(reason)),
   });
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    setError('');
     const errors = validateRequisitionForm(form.locationId, form.categoryId, form.description, form.requesterWhatsapp, photo);
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
@@ -72,8 +72,6 @@ export default function CreateRequisitionPage() {
         <h1>Abrir requisição</h1>
       </div>
     </div>
-
-    {error && <p className="form-error">{error}</p>}
 
     <div className="create-requisition-layout">
       <section className="panel create-form-panel">

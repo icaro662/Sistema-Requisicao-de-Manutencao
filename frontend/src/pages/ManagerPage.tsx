@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BarChart3, ClipboardList, Filter, Users } from 'lucide-react';
-import { apiErrorMessage } from './services/api';
-import { maintenanceService } from './services/maintenanceService';
-import type { Category, DashboardFilters, Location, Requisition, RequisitionPriority, RequisitionStatus, User } from './types';
+import { apiErrorMessage } from '../services/api';
+import { maintenanceService } from '../services/maintenanceService';
+import { useToast } from '../components/Toast';
+import type { Category, DashboardFilters, Location, Requisition, RequisitionPriority, RequisitionStatus, User } from '../types';
 
 const statusLabels: Record<RequisitionStatus, string> = {
   aberta: 'Aberta',
@@ -23,8 +24,8 @@ const priorityOptions: Array<{ value: RequisitionPriority; label: string }> = [
 
 export default function ManagerPage() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [error, setError] = useState('');
   const [filters, setFilters] = useState({ from: '', to: '', locationId: '', executorId: '', categoryId: '', priority: '', status: '' });
   const [appliedFilters, setAppliedFilters] = useState(filters);
 
@@ -52,12 +53,12 @@ export default function ManagerPage() {
     mutationFn: ({ id, executorId }: { id: string; executorId: string }) =>
       maintenanceService.assignExecutor(id, executorId),
     onSuccess: () => {
-      setError('');
+      showToast('Executor atribuído com sucesso!', 'success');
       setSelectedId(null);
       void queryClient.invalidateQueries({ queryKey: ['requisitions'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (reason) => setError(apiErrorMessage(reason)),
+    onError: (reason) => showToast(apiErrorMessage(reason)),
   });
 
   const requisitions = requisitionsQuery.data?.data ?? [];
@@ -84,8 +85,6 @@ export default function ManagerPage() {
         <h1>Gerenciar solicitações</h1>
       </div>
     </div>
-
-    {error && <p className="form-error">{error}</p>}
 
     <section className="panel report-filters-panel">
       <div className="panel-heading"><div><p className="eyebrow">Indicadores</p><h2>Filtrar painel</h2></div><Filter size={19} /></div>

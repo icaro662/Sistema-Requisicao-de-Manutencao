@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart3, Download, RefreshCw } from 'lucide-react';
-import { apiErrorMessage } from './services/api';
-import { maintenanceService } from './services/maintenanceService';
-import type { Category, Location, RequisitionPriority, RequisitionStatus, User } from './types';
+import { apiErrorMessage } from '../services/api';
+import { maintenanceService } from '../services/maintenanceService';
+import type { Category, Location, RequisitionPriority, RequisitionStatus, User } from '../types';
 
 const statusLabels: Record<RequisitionStatus, string> = {
   aberta: 'Aberta',

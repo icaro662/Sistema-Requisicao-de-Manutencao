@@ -8,6 +8,7 @@
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
     "seed": "npm run build && node dist/core/database/seeds/seed.js",
+    "seed:dev": "npm run build && node dist/core/database/seeds/dev.seed.js",
     "test": "jest --runInBand",
     "migration:generate": "npm run build && typeorm migration:generate src/core/database/migrations/InitialSchema -d dist/core/database/data-source.js",
     "migration:run": "npm run build && typeorm migration:run -d dist/core/database/data-source.js",
@@ -29,6 +30,7 @@
     "dotenv": "^17.4.1",
     "exceljs": "^4.4.0",
     "mysql2": "^3.14.0",
+    "nodemailer": "^10.0.11",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pdfkit": "^0.20.2",
@@ -45,6 +47,7 @@
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.2.0",
     "@types/node": "^22.13.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/passport-jwt": "^4.0.1",
     "@types/pdfkit": "^0.17.6",
     "jest": "^30.5.2",
@@ -52,7 +55,8 @@
     "typescript": "^5.7.3"
   },
   "allowScripts": {
-    "bcrypt@6.0.0": true
+    "bcrypt@6.0.0": true,
+    "unrs-resolver@1.12.2": true
   },
   "overrides": {
     "exceljs": {

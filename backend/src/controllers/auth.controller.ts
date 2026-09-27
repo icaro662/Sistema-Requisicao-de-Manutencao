@@ -6,6 +6,8 @@ import { AuthService } from '../services/auth.service';
 import { LoginDto } from '../dtos/auth/login.dto';
 import { RefreshTokenDto } from '../dtos/auth/refresh-token.dto';
 import { RegisterDto } from '../dtos/auth/register.dto';
+import { ForgotPasswordDto } from '../dtos/auth/forgot-password.dto';
+import { ResetPasswordDto } from '../dtos/auth/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -26,4 +28,14 @@ export class AuthController {
 
   @Post('logout')
   logout(@Body() dto: RefreshTokenDto): Promise<{ message: string }> { return this.authService.logout(dto); }
+
+  @Post('forgot-password')
+  forgotPassword(@Body() dto: ForgotPasswordDto): Promise<{ message: string }> {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
+    return this.authService.resetPassword(dto);
+  }
 }

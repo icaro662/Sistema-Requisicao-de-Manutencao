@@ -1,15 +1,15 @@
 import { FormEvent, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Tag, Edit2, Plus, Search } from 'lucide-react';
-import { apiErrorMessage } from './services/api';
-import { maintenanceService } from './services/maintenanceService';
-import type { Category } from './types';
+import { MapPin, Edit2, Plus, Search } from 'lucide-react';
+import { apiErrorMessage } from '../services/api';
+import { maintenanceService } from '../services/maintenanceService';
+import type { Location } from '../types';
 
-export default function CategoryAdminPage() {
+export default function LocationAdminPage() {
   const queryClient = useQueryClient();
-  const categoriesQuery = useQuery({ 
-    queryKey: ['categories'], 
-    queryFn: maintenanceService.categories 
+  const locationsQuery = useQuery({ 
+    queryKey: ['locations'], 
+    queryFn: maintenanceService.locations 
   });
 
   const [form, setForm] = useState({ name: '', description: '' });
@@ -26,19 +26,19 @@ export default function CategoryAdminPage() {
   };
 
   const createMutation = useMutation({
-    mutationFn: () => maintenanceService.createCategory(form),
+    mutationFn: () => maintenanceService.createLocation(form),
     onSuccess: () => {
       resetForm();
-      void queryClient.invalidateQueries({ queryKey: ['categories'] });
+      void queryClient.invalidateQueries({ queryKey: ['locations'] });
     },
     onError: (reason) => setError(apiErrorMessage(reason)),
   });
 
   const updateMutation = useMutation({
-    mutationFn: () => maintenanceService.updateCategory(editingId!, form),
+    mutationFn: () => maintenanceService.updateLocation(editingId!, form),
     onSuccess: () => {
       resetForm();
-      void queryClient.invalidateQueries({ queryKey: ['categories'] });
+      void queryClient.invalidateQueries({ queryKey: ['locations'] });
     },
     onError: (reason) => setError(apiErrorMessage(reason)),
   });
@@ -48,7 +48,7 @@ export default function CategoryAdminPage() {
     setError('');
 
     if (!form.name.trim()) {
-      setFieldErrors({ name: 'O nome da categoria é obrigatório.' });
+      setFieldErrors({ name: 'O nome do local é obrigatório.' });
       return;
     }
     setFieldErrors({});
@@ -60,9 +60,9 @@ export default function CategoryAdminPage() {
     }
   };
 
-  const handleEdit = (category: Category) => {
-    setEditingId(category.id);
-    setForm({ name: category.name, description: category.description ?? '' });
+  const handleEdit = (location: Location) => {
+    setEditingId(location.id);
+    setForm({ name: location.name, description: location.description ?? '' });
     setError('');
     setFieldErrors({});
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -70,9 +70,10 @@ export default function CategoryAdminPage() {
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  const filteredCategories = categoriesQuery.data?.filter((category) =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  // Filtrar locais com base na busca
+  const filteredLocations = locationsQuery.data?.filter((location) =>
+    location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (location.description && location.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -80,7 +81,7 @@ export default function CategoryAdminPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Administração</p>
-          <h1>Gerenciar Categorias</h1>
+          <h1>Gerenciar Locais</h1>
         </div>
       </div>
 
@@ -91,13 +92,13 @@ export default function CategoryAdminPage() {
           <div className="panel-heading">
             <div>
               <p className="eyebrow">{editingId ? 'Modo de Edição' : 'Novo Registro'}</p>
-              <h2>{editingId ? 'Editar Categoria' : 'Cadastrar Categoria'}</h2>
+              <h2>{editingId ? 'Editar Local' : 'Cadastrar Local'}</h2>
             </div>
             {editingId ? <Edit2 size={20} /> : <Plus size={20} />}
           </div>
 
           <form className="admin-form" onSubmit={submit}>
-            <label>Nome da Categoria
+            <label>Nome do Local
               <input
                 type="text"
                 required
@@ -106,7 +107,7 @@ export default function CategoryAdminPage() {
                   setForm({ ...form, name: e.target.value }); 
                   setFieldErrors({ ...fieldErrors, name: '' }); 
                 }}
-                placeholder="Ex: Elétrica, Hidráulica..."
+                placeholder="Ex: Sala 101, Laboratório..."
                 aria-invalid={Boolean(fieldErrors.name)}
               />
               {fieldErrors.name && <span className="field-error">{fieldErrors.name}</span>}
@@ -117,13 +118,13 @@ export default function CategoryAdminPage() {
                 rows={3}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Detalhes adicionais sobre a categoria..."
+                placeholder="Detalhes adicionais sobre o local..."
               />
             </label>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
               <button type="submit" className="primary-button" disabled={isPending}>
-                {isPending ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Cadastrar Categoria'}
+                {isPending ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Cadastrar Local'}
               </button>
 
               {editingId && (
@@ -151,9 +152,9 @@ export default function CategoryAdminPage() {
           <div className="panel-heading">
             <div>
               <p className="eyebrow">Diretório</p>
-              <h2>Categorias Cadastradas</h2>
+              <h2>Locais Cadastrados</h2>
             </div>
-            <Tag size={20} />
+            <MapPin size={20} />
           </div>
 
           <div style={{ padding: '0 16px 12px 16px' }}>
@@ -161,7 +162,7 @@ export default function CategoryAdminPage() {
               <Search size={16} color="#6b7280" />
               <input
                 type="text"
-                placeholder="Buscar categoria..."
+                placeholder="Buscar local..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{ border: 'none', outline: 'none', width: '100%', fontSize: '14px' }}
@@ -169,13 +170,13 @@ export default function CategoryAdminPage() {
             </div>
           </div>
 
-          {categoriesQuery.isLoading ? (
-            <div className="empty-state">Carregando categorias...</div>
+          {locationsQuery.isLoading ? (
+            <div className="empty-state">Carregando locais...</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '0 16px 16px 16px' }}>
-              {filteredCategories?.map((category) => (
+              {filteredLocations?.map((location) => (
                 <div 
-                  key={category.id} 
+                  key={location.id} 
                   style={{ 
                     display: 'flex', 
                     justifyContent: 'space-between', 
@@ -183,31 +184,31 @@ export default function CategoryAdminPage() {
                     padding: '12px', 
                     border: '1px solid #e5e7eb', 
                     borderRadius: '8px', 
-                    background: editingId === category.id ? '#eff6ff' : '#fff' 
+                    background: editingId === location.id ? '#eff6ff' : '#fff' 
                   }}
                 >
                   <div>
                     <strong style={{ display: 'block', fontSize: '14px', color: '#111827' }}>
-                      {category.name}
+                      {location.name}
                     </strong>
-                    {category.description && (
+                    {location.description && (
                       <span style={{ fontSize: '13px', color: '#6b7280' }}>
-                        {category.description}
+                        {location.description}
                       </span>
                     )}
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleEdit(category)}
+                    onClick={() => handleEdit(location)}
                     style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: '4px' }}
-                    title="Editar categoria"
+                    title="Editar local"
                   >
                     <Edit2 size={16} />
                   </button>
                 </div>
               ))}
-              {!filteredCategories?.length && (
-                <div className="empty-state">Nenhuma categoria encontrada.</div>
+              {!filteredLocations?.length && (
+                <div className="empty-state">Nenhum local encontrado.</div>
               )}
             </div>
           )}

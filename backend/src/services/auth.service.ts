@@ -1,12 +1,16 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { compare } from 'bcrypt';
-import { randomUUID } from 'crypto';
+import { compare, hash } from 'bcrypt';
+import { randomBytes, randomUUID } from 'crypto';
 import { LoginDto } from '../dtos/auth/login.dto';
 import { RegisterDto } from '../dtos/auth/register.dto';
 import { RefreshTokenDto } from '../dtos/auth/refresh-token.dto';
+import { ForgotPasswordDto } from '../dtos/auth/forgot-password.dto';
+import { ResetPasswordDto } from '../dtos/auth/reset-password.dto';
 import { User } from '../models/user.entity';
+import { EmailProvider } from '../core/providers/email.provider';
+import { passwordResetEmailTemplate } from '../core/templates/email.template';
 import { UsersService } from './users.service';
 
 export interface AuthResponse {
@@ -33,7 +37,8 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    config: ConfigService,
+    private readonly emailProvider: EmailProvider,
+    private readonly config: ConfigService,
   ) {
     this.jwtSecret = config.get<string>('JWT_SECRET', 'change-me');
     this.refreshTokenTtl = config.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as import('jsonwebtoken').SignOptions['expiresIn'];
@@ -97,6 +102,45 @@ export class AuthService {
     }
 
     return { message: 'Logout successful' };
+  }
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
+    const user = await this.usersService.findByEmail(forgotPasswordDto.email);
+    if (!user) {
+      // Don't reveal if email exists — return success either way
+      return { message: 'Se o e-mail estiver cadastrado, você receberá um link para redefinir a senha.' };
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    user.passwordResetToken = token;
+    user.passwordResetExpires = expires;
+    await this.usersService.saveUser(user);
+
+    const resetUrl = `${this.config.get<string>('FRONTEND_URL', 'http://localhost:5173')}/reset-password?token=${token}`;
+    await this.emailProvider.send(
+      user.email,
+      'Redefinição de Senha — Central de Manutenção',
+      passwordResetEmailTemplate(resetUrl, user.name),
+    );
+
+    return { message: 'Se o e-mail estiver cadastrado, você receberá um link para redefinir a senha.' };
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+    const user = await this.usersService.findByResetToken(resetPasswordDto.token);
+    if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
+      throw new UnauthorizedException('Token inválido ou expirado');
+    }
+
+    user.password = await hash(resetPasswordDto.password, 12);
+    user.passwordResetToken = null;
+    user.passwordResetExpires = null;
+    user.tokenVersion += 1; // Invalidate all existing sessions
+    await this.usersService.saveUser(user);
+
+    return { message: 'Senha redefinida com sucesso' };
   }
 
   private async issueTokens(user: User, message: string): Promise<AuthResponse> {

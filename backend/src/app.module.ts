@@ -8,10 +8,12 @@ import { AuthModule } from './modules/auth.module';
 import { CategoriesModule } from './modules/categories.module';
 import { DashboardModule } from './modules/dashboard.module';
 import { DatabaseModule } from './modules/database.module';
+import { ExecutionRecordsModule } from './modules/execution-records.module';
 import { ExecutorsModule } from './modules/executors.module';
 import { LocationsModule } from './modules/locations.module';
 import { NotificationsModule } from './modules/notifications.module';
 import { ReportsModule } from './modules/reports.module';
+import { RequestMaterialModule } from './modules/request-material.module';
 import { RequisitionsModule } from './modules/requisitions.module';
 import { UploadModule } from './modules/upload.module';
 import { UsersModule } from './modules/users.module';
@@ -20,7 +22,7 @@ import { UsersModule } from './modules/users.module';
   imports: [
     ConfigModule.forRoot({ 
       isGlobal: true,
-      envFilePath: 'src/config/.env',
+      envFilePath: join(process.cwd(), 'src/config/.env'),
     }),
 
     TypeOrmModule.forRootAsync({
@@ -48,11 +50,13 @@ import { UsersModule } from './modules/users.module';
     LocationsModule,
     CategoriesModule,
     ExecutorsModule,
+    ExecutionRecordsModule,
     NotificationsModule,
     DashboardModule,
     ReportsModule,
     UploadModule,
     DatabaseModule,
+    RequestMaterialModule,
   ],
   controllers: [AppController],
   providers: [AppService],
