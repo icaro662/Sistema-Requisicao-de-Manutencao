@@ -26,15 +26,20 @@ export default function CreateRequisitionPage() {
     priority: 'media' as RequisitionPriority,
     requesterWhatsapp: currentUser?.phone ?? '',
   });
+  const [photo, setPhoto] = useState<File | null>(null);
   const [error, setError] = useState('');
 
   const mutation = useMutation({
-    mutationFn: () => maintenanceService.createRequisition({
-      ...form,
-      requesterEmail: currentUser?.email ?? '',
-      requesterPhone: currentUser?.phone ?? '',
-      requesterWhatsapp: form.requesterWhatsapp,
-    }),
+    mutationFn: async () => {
+      const uploadedPhoto = photo ? await maintenanceService.uploadPhoto(photo) : undefined;
+      return maintenanceService.createRequisition({
+        ...form,
+        requesterEmail: currentUser?.email ?? '',
+        requesterPhone: currentUser?.phone ?? '',
+        requesterWhatsapp: form.requesterWhatsapp,
+        photoUrl: uploadedPhoto?.path,
+      });
+    },
     onSuccess: () => {
       setError('');
       void queryClient.invalidateQueries({ queryKey: ['requisitions'] });
@@ -46,6 +51,12 @@ export default function CreateRequisitionPage() {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setError('');
+
+    if (photo && (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.type) || photo.size > 5 * 1024 * 1024)) {
+      setError('A foto deve ser JPEG, PNG ou WebP e ter no máximo 5 MB.');
+      return;
+    }
+
     mutation.mutate();
   };
 
@@ -108,6 +119,13 @@ export default function CreateRequisitionPage() {
               value={form.requesterWhatsapp}
               onChange={(event) => setForm({ ...form, requesterWhatsapp: event.target.value })}
               placeholder="(00) 00000-0000"
+            />
+          </label>
+          <label>Foto do problema <span className="optional">(opcional)</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
             />
           </label>
           <label>Prioridade

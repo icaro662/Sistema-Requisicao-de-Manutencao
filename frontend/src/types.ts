@@ -20,6 +20,7 @@ export interface Requisition {
   requesterEmail?: string;
   requesterPhone?: string;
   requesterWhatsapp?: string;
+  photoUrl?: string;
   locationId?: string;
   categoryId?: string;
   executorId?: string;
@@ -34,6 +35,6 @@ export interface DashboardSummary { total: number; byStatus: Record<string, numb
 export interface RequisitionQuery { status?: RequisitionStatus; priority?: RequisitionPriority; search?: string }
 export interface LoginInput { email: string; password: string }
 export interface RegisterInput { name: string; email: string; password: string; phone?: string }
-export interface CreateRequisitionInput { locationId: string; categoryId: string; description: string; priority: RequisitionPriority; requesterEmail: string; requesterPhone: string; requesterWhatsapp?: string }
+export interface CreateRequisitionInput { locationId: string; categoryId: string; description: string; priority: RequisitionPriority; requesterEmail: string; requesterPhone: string; requesterWhatsapp?: string; photoUrl?: string }
 export interface RegisterExecutionInput { executionDescription: string; materialsUsed?: string; observations?: string }
 export interface Notification { id: string; message: string; requisitionId: string; requisitionNumber: string; status: RequisitionStatus; createdAt: string; read: boolean }

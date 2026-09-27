@@ -1,10 +1,19 @@
 import api from './api';
 import type { Category, CreateRequisitionInput, DashboardSummary, Location, ManagedUserInput, Notification, Paginated, RegisterExecutionInput, Requisition, RequisitionQuery, RequisitionStatus, UpdateUserInput, User } from '../types';
 
+interface UploadPhotoResponse { filename: string; path: string; mimetype: string; size: number }
+
 export const maintenanceService = {
   dashboard: () => api.get<DashboardSummary>('/painel').then(({ data }) => data),
   requisitions: (params?: RequisitionQuery) => api.get<Paginated<Requisition>>('/requisicoes', { params }).then(({ data }) => data),
   requisition: (id: string) => api.get<Requisition>(`/requisicoes/${id}`).then(({ data }) => data),
+  uploadPhoto: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post<UploadPhotoResponse>('/arquivos/photo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(({ data }) => data);
+  },
   createRequisition: (input: CreateRequisitionInput) => api.post<Requisition>('/requisicoes', input).then(({ data }) => data),
   updateStatus: (id: string, status: RequisitionStatus) => api.patch<Requisition>(`/requisicoes/${id}/status`, { status }).then(({ data }) => data),
   assignExecutor: (id: string, executorId: string) => api.post<Requisition>(`/requisicoes/${id}/atribuir`, { executorId }).then(({ data }) => data),
