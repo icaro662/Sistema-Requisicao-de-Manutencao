@@ -34,6 +34,9 @@ export class Requisition {
   @Column({ name: 'telefone_solicitante' })
   requesterPhone: string;
 
+  @Column({ name: 'foto_url', type: 'varchar', length: 255, nullable: true })
+  photoUrl: string | null;
+
   @Column({ name: 'executor_id', type: 'varchar', length: 36, nullable: true })
   executorId: string | null;
 

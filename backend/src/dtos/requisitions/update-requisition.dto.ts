@@ -24,4 +24,8 @@ export class UpdateRequisitionDto {
 	@IsOptional()
 	@IsString()
 	requesterPhone?: string;
+
+	@IsOptional()
+	@IsString()
+	photoUrl?: string;
 }
