@@ -94,8 +94,12 @@ export class RequisitionsService {
     const requisition = await this.requisitionsRepository.findOne({ where: { id } });
     if (!requisition) throw new NotFoundException('Requisição não encontrada');
 
+    if (dto.locationId !== undefined) requisition.locationId = dto.locationId;
+    if (dto.categoryId !== undefined) requisition.categoryId = dto.categoryId;
     if (dto.description !== undefined) requisition.description = dto.description;
     if (dto.priority !== undefined) requisition.priority = dto.priority;
+    if (dto.requesterEmail !== undefined) requisition.requesterEmail = dto.requesterEmail;
+    if (dto.requesterPhone !== undefined) requisition.requesterPhone = dto.requesterPhone;
 
     return this.requisitionsRepository.save(requisition);
   }
