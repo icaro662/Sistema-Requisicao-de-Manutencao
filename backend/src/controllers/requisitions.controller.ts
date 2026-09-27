@@ -40,6 +40,7 @@ export class RequisitionsController {
   }
 
   @Patch(':id/status')
+  @Roles(UserRole.EXECUTOR, UserRole.MANAGER, UserRole.ADMIN)
   updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto, @CurrentUser() user: RequestUser) {
     return this.requisitionsService.updateStatus(id, dto, user.role, user.id);
   }

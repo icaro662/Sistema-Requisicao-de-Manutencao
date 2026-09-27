@@ -116,7 +116,11 @@ export class RequisitionsService {
     const requisition = await this.requisitionsRepository.findOne({ where: { id } });
     if (!requisition) throw new NotFoundException('Requisição não encontrada');
 
-    // Only executor assigned, manager, or admin can update status
+    if (userRole !== UserRole.EXECUTOR && userRole !== UserRole.MANAGER && userRole !== UserRole.ADMIN) {
+      throw new NotFoundException('Requisição não encontrada');
+    }
+
+    // Only the assigned executor, manager, or admin can update status.
     if (userRole === UserRole.EXECUTOR && requisition.executorId !== userId) {
       throw new NotFoundException('Requisição não encontrada');
     }
