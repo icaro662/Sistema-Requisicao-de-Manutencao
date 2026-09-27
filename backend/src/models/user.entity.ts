@@ -45,6 +45,12 @@ export class User {
   @Column({ name: 'versao_token', type: 'int', default: 0 })
   tokenVersion: number;
 
+  @Column({ name: 'token_reset_senha', type: 'varchar', length: 64, nullable: true })
+  passwordResetToken: string | null;
+
+  @Column({ name: 'token_reset_expira', type: 'datetime', nullable: true })
+  passwordResetExpires: Date | null;
+
   @CreateDateColumn({ name: 'criado_em' })
   createdAt: Date;
 
