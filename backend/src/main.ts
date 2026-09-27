@@ -1,9 +1,12 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { config as dotenvConfig } from 'dotenv';
 import { join } from 'node:path';
 import express from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
+
+dotenvConfig({ path: join(process.cwd(), 'src/config/.env') });
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -20,7 +23,8 @@ async function bootstrap(): Promise<void> {
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port);
-  console.log(`Maintenance API running on http://localhost:${port}/api`);
+  console.log(`Maintenance API running.\n
+HealthCheck endpoint on: http://localhost:${port}/api/health`);
 }
 
 void bootstrap();
