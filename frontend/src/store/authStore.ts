@@ -1,17 +1,25 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User } from '../types';
+import type { AuthResponse, User } from '../types';
 
 interface AuthState {
   user: User | null;
   sessionEmail: string | null;
-  signIn: (email: string) => void;
+  signIn: (session: AuthResponse) => void;
   signOut: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(persist((set) => ({
   user: null,
   sessionEmail: null,
-  signIn: (email) => set({ sessionEmail: email, user: { id: 'session', name: email.split('@')[0], email } }),
-  signOut: () => set({ sessionEmail: null, user: null }),
+  signIn: (session) => {
+    localStorage.setItem('accessToken', session.accessToken);
+    localStorage.setItem('refreshToken', session.refreshToken);
+    set({ sessionEmail: session.user.email, user: session.user });
+  },
+  signOut: () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    set({ sessionEmail: null, user: null });
+  },
 }), { name: 'maintenance-auth' }));

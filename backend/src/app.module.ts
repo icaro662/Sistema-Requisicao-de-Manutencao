@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { join } from 'node:path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth.module';
@@ -17,7 +18,11 @@ import { UsersModule } from './modules/users.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ 
+      isGlobal: true,
+      envFilePath: 'src/config/.env',
+    }),
+
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -28,8 +33,13 @@ import { UsersModule } from './modules/users.module';
         password: config.get<string>('DB_PASSWORD', ''),
         database: config.get<string>('DB_NAME', 'maintenance_system'),
         autoLoadEntities: true,
-        synchronize: config.get<string>('DB_SYNCHRONIZE', 'true') === 'true',
-        logging: config.get<string>('NODE_ENV') !== 'production',
+        migrations: [join(__dirname, 'core/database/migrations/*{.ts,.js}')],
+        migrationsRun: false,
+        synchronize: config.get<string>(
+          'DB_SYNCHRONIZE',
+          config.get<string>('NODE_ENV', 'development') === 'production' ? 'false' : 'true',
+        ) === 'true',
+        logging: config.get<string>('NODE_ENV') !== 'production',        
       }),
     }),
     AuthModule,

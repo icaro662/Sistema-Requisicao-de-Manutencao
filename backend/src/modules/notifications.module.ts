@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Requisition } from '../models/requisition.entity';
+import { NotificationsController } from '../controllers/notifications.controller';
 import { NotificationsService } from '../services/notifications.service';
-import { EmailProvider } from '../core/providers/email.provider';
-import { WhatsappProvider } from '../core/providers/whatsapp.provider';
 
 @Module({
-  providers: [NotificationsService, EmailProvider, WhatsappProvider],
+  imports: [TypeOrmModule.forFeature([Requisition])],
+  controllers: [NotificationsController],
+  providers: [NotificationsService],
   exports: [NotificationsService],
 })
 export class NotificationsModule {}

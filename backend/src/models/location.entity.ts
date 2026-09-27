@@ -1,19 +1,19 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
-@Entity('locations')
+@Entity('locais')
 export class Location {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column({ name: 'nome', unique: true })
   name: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ name: 'descricao', type: 'text', nullable: true })
   description: string | null;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'criado_em' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'atualizado_em' })
   updatedAt: Date;
 }
