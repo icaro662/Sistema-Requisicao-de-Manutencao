@@ -36,6 +36,8 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
+
+import SystemSettingsPage from './SystemSettingsPage';
 import CategoryAdminPage from './CategoryAdminPage';
 import LocationAdminPage from './LocationAdminPage';
 import { apiErrorMessage } from './services/api';
@@ -936,6 +938,10 @@ function Shell() {
             <Route
               path="/categorias"
               element={<CategoryAdminPage />}
+            />
+            <Route
+              path="/configuracoes"
+              element={<SystemSettingsPage />}
             />
 
             <Route
