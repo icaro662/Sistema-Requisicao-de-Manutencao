@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength, ValidateIf } from 'class-validator';
 import { UserRole } from '../../models/user.entity';
 
 export class CreateUserDto {
@@ -30,6 +30,7 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsString({ message: 'O telefone deve ser um texto.' })
+  @ValidateIf((_object, value) => value !== undefined && value !== '')
   @Matches(/^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/, {
     message: 'Formato de telefone inválido. Use (00) 00000-0000.',
   })
