@@ -35,7 +35,10 @@ import { UsersModule } from './modules/users.module';
         autoLoadEntities: true,
         migrations: [join(__dirname, 'core/database/migrations/*{.ts,.js}')],
         migrationsRun: false,
-        synchronize: config.get<string>('DB_SYNCHRONIZE', 'true') === 'true',
+        synchronize: config.get<string>(
+          'DB_SYNCHRONIZE',
+          config.get<string>('NODE_ENV', 'development') === 'production' ? 'false' : 'true',
+        ) === 'true',
         logging: config.get<string>('NODE_ENV') !== 'production',        
       }),
     }),
