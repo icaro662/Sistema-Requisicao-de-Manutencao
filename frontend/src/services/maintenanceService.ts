@@ -1,5 +1,5 @@
 import api from './api';
-import type { Category, CreateRequisitionInput, DashboardFilters, DashboardSummary, Location, ManagedUserInput, Notification, Paginated, RegisterExecutionInput, ReportFilters, ReportResponse, Requisition, RequisitionQuery, RequisitionStatus, UpdateUserInput, User } from '../types';
+import type { Category, CreateRequisitionInput, DashboardFilters, DashboardSummary, Location, ManagedUserInput, Notification, Paginated, RegisterExecutionInput, RequestMaterial, ExecutionRecord , ReportFilters, ReportResponse, Requisition, RequisitionQuery, RequisitionStatus, UpdateUserInput, User } from '../types';
 
 interface UploadPhotoResponse { filename: string; path: string; mimetype: string; size: number }
 
@@ -20,7 +20,10 @@ export const maintenanceService = {
   createRequisition: (input: CreateRequisitionInput) => api.post<Requisition>('/requisicoes', input).then(({ data }) => data),
   updateStatus: (id: string, status: RequisitionStatus) => api.patch<Requisition>(`/requisicoes/${id}/status`, { status }).then(({ data }) => data),
   assignExecutor: (id: string, executorId: string) => api.post<Requisition>(`/requisicoes/${id}/atribuir`, { executorId }).then(({ data }) => data),
-  registerExecution: (id: string, input: RegisterExecutionInput) => api.post<Requisition>(`/requisicoes/${id}/execucao`, input).then(({ data }) => data),
+  selfAssign: (id: string) => api.post<Requisition>(`/requisicoes/${id}/assumir`).then(({ data }) => data),
+  registerExecution: (id: string, input: RegisterExecutionInput) => api.post<ExecutionRecord>(`/execucoes/requisicao/${id}`, input).then(({ data }) => data),
+  addObservation: (id: string, observation: string) => api.post<Requisition>(`/execucoes/requisicao/${id}/observacao`, { observacao: observation }).then(({ data }) => data),
+  executionHistory: (id: string) => api.get<ExecutionRecord[]>(`/execucoes/requisicao/${id}`).then(({ data }) => data),
   users: () => api.get<Paginated<User>>('/usuarios').then(({ data }) => data),
   createUser: (input: ManagedUserInput) => api.post<User>('/usuarios', input).then(({ data }) => data),
   updateUser: (id: string, input: UpdateUserInput) => api.patch<User>(`/usuarios/${id}`, input).then(({ data }) => data),
@@ -32,4 +35,7 @@ export const maintenanceService = {
   updateCategory: (id: string, input: { name?: string; description?: string }) => api.patch<Category>(`/categorias/${id}`, input).then(({ data }) => data),
   executors: () => api.get<User[]>('/executores').then(({ data }) => data),
   notifications: () => api.get<Notification[]>('/notificacoes').then(({ data }) => data),
+  requestMaterials: (id: string) => api.get<RequestMaterial[]>(`/materiais/requisicao/${id}`).then(({ data }) => data),
+  createRequestMaterial: (id: string, input: { materialsNeeded: string; reason: string }) => api.post<RequestMaterial>(`/materiais/requisicao/${id}`, input).then(({ data }) => data),
+  executions: () => api.get<ExecutionRecord[]>('/execucoes').then(({ data }) => data),
 };
