@@ -34,13 +34,18 @@ export default function CreateRequisitionPage() {
   const mutation = useMutation({
     mutationFn: async () => {
       const uploadedPhoto = photo ? await maintenanceService.uploadPhoto(photo) : undefined;
-      return maintenanceService.createRequisition({
-        ...form,
-        requesterEmail: currentUser?.email ?? '',
-        requesterPhone: currentUser?.phone ?? '',
-        requesterWhatsapp: form.requesterWhatsapp,
-        photoUrl: uploadedPhoto?.path,
-      });
+      try {
+        return await maintenanceService.createRequisition({
+          ...form,
+          requesterEmail: currentUser?.email ?? '',
+          requesterPhone: currentUser?.phone ?? '',
+          requesterWhatsapp: form.requesterWhatsapp,
+          photoUrl: uploadedPhoto?.path,
+        });
+      } catch (reason) {
+        if (uploadedPhoto) await maintenanceService.removePhoto(uploadedPhoto.filename).catch(() => undefined);
+        throw reason;
+      }
     },
     onSuccess: () => {
       setError('');

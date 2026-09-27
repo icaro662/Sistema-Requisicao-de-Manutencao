@@ -14,6 +14,7 @@ export const maintenanceService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(({ data }) => data);
   },
+  removePhoto: (filename: string) => api.delete<{ filename: string; removed: boolean }>(`/arquivos/${encodeURIComponent(filename)}`).then(({ data }) => data),
   createRequisition: (input: CreateRequisitionInput) => api.post<Requisition>('/requisicoes', input).then(({ data }) => data),
   updateStatus: (id: string, status: RequisitionStatus) => api.patch<Requisition>(`/requisicoes/${id}/status`, { status }).then(({ data }) => data),
   assignExecutor: (id: string, executorId: string) => api.post<Requisition>(`/requisicoes/${id}/atribuir`, { executorId }).then(({ data }) => data),
