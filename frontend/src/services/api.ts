@@ -50,7 +50,14 @@ api.interceptors.response.use(undefined, async (error) => {
 
 export function apiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    const message = error.response?.data?.message ?? error.response?.data?.error ?? error.message;
+    const responseMessage = error.response?.data?.message ?? error.response?.data?.error;
+    const message = Array.isArray(responseMessage)
+      ? responseMessage.join(' ')
+      : typeof responseMessage === 'string'
+        ? responseMessage
+        : responseMessage && typeof responseMessage === 'object'
+          ? JSON.stringify(responseMessage)
+          : error.message;
     const translations: Record<string, string> = {
       'Invalid credentials': 'Credenciais inválidas.',
       'Email is already registered': 'Este e-mail já está cadastrado.',
