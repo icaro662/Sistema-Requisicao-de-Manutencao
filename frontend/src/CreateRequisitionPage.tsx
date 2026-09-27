@@ -5,6 +5,7 @@ import { apiErrorMessage } from './services/api';
 import { maintenanceService } from './services/maintenanceService';
 import { useAuthStore } from './store/authStore';
 import type { Category, Location, RequisitionPriority } from './types';
+import { validateRequisitionForm, type FieldError } from './utils/validation';
 
 const priorityOptions: { value: RequisitionPriority; label: string }[] = [
   { value: 'baixa', label: 'Baixa' },
@@ -24,15 +25,28 @@ export default function CreateRequisitionPage() {
     categoryId: '',
     description: '',
     priority: 'media' as RequisitionPriority,
+    requesterWhatsapp: currentUser?.phone ?? '',
   });
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldError>({});
   const [error, setError] = useState('');
 
   const mutation = useMutation({
-    mutationFn: () => maintenanceService.createRequisition({
-      ...form,
-      requesterEmail: currentUser?.email ?? '',
-      requesterPhone: currentUser?.phone ?? '',
-    }),
+    mutationFn: async () => {
+      const uploadedPhoto = photo ? await maintenanceService.uploadPhoto(photo) : undefined;
+      try {
+        return await maintenanceService.createRequisition({
+          ...form,
+          requesterEmail: currentUser?.email ?? '',
+          requesterPhone: currentUser?.phone ?? '',
+          requesterWhatsapp: form.requesterWhatsapp,
+          photoUrl: uploadedPhoto?.path,
+        });
+      } catch (reason) {
+        if (uploadedPhoto) await maintenanceService.removePhoto(uploadedPhoto.filename).catch(() => undefined);
+        throw reason;
+      }
+    },
     onSuccess: () => {
       setError('');
       void queryClient.invalidateQueries({ queryKey: ['requisitions'] });
@@ -44,6 +58,10 @@ export default function CreateRequisitionPage() {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setError('');
+    const errors = validateRequisitionForm(form.locationId, form.categoryId, form.description, form.requesterWhatsapp, photo);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     mutation.mutate();
   };
 
@@ -71,34 +89,59 @@ export default function CreateRequisitionPage() {
             <select
               required
               value={form.locationId}
-              onChange={(event) => setForm({ ...form, locationId: event.target.value })}
+              onChange={(event) => { setForm({ ...form, locationId: event.target.value }); setFieldErrors({ ...fieldErrors, locationId: '' }); }}
+              aria-invalid={Boolean(fieldErrors.locationId)}
             >
               <option value="">Selecione um local</option>
               {locationsQuery.data?.map((location: Location) => (
                 <option key={location.id} value={location.id}>{location.name}</option>
               ))}
             </select>
+            {fieldErrors.locationId && <span className="field-error">{fieldErrors.locationId}</span>}
           </label>
           <label>Categoria
             <select
               required
               value={form.categoryId}
-              onChange={(event) => setForm({ ...form, categoryId: event.target.value })}
+              onChange={(event) => { setForm({ ...form, categoryId: event.target.value }); setFieldErrors({ ...fieldErrors, categoryId: '' }); }}
+              aria-invalid={Boolean(fieldErrors.categoryId)}
             >
               <option value="">Selecione uma categoria</option>
               {categoriesQuery.data?.map((category: Category) => (
                 <option key={category.id} value={category.id}>{category.name}</option>
               ))}
             </select>
+            {fieldErrors.categoryId && <span className="field-error">{fieldErrors.categoryId}</span>}
           </label>
           <label>Descrição
             <textarea
               required
               rows={4}
               value={form.description}
-              onChange={(event) => setForm({ ...form, description: event.target.value })}
+              onChange={(event) => { setForm({ ...form, description: event.target.value }); setFieldErrors({ ...fieldErrors, description: '' }); }}
               placeholder="Descreva o problema ou necessidade..."
+              aria-invalid={Boolean(fieldErrors.description)}
             />
+            {fieldErrors.description && <span className="field-error">{fieldErrors.description}</span>}
+          </label>
+          <label>WhatsApp <span className="optional">(opcional)</span>
+            <input
+              type="tel"
+              value={form.requesterWhatsapp}
+              onChange={(event) => { setForm({ ...form, requesterWhatsapp: event.target.value }); setFieldErrors({ ...fieldErrors, requesterWhatsapp: '' }); }}
+              placeholder="(00) 00000-0000"
+              aria-invalid={Boolean(fieldErrors.requesterWhatsapp)}
+            />
+            {fieldErrors.requesterWhatsapp && <span className="field-error">{fieldErrors.requesterWhatsapp}</span>}
+          </label>
+          <label>Foto do problema <span className="optional">(opcional)</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => { setPhoto(event.target.files?.[0] ?? null); setFieldErrors({ ...fieldErrors, photo: '' }); }}
+              aria-invalid={Boolean(fieldErrors.photo)}
+            />
+            {fieldErrors.photo && <span className="field-error">{fieldErrors.photo}</span>}
           </label>
           <label>Prioridade
             <select

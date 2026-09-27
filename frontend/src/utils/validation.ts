@@ -58,3 +58,19 @@ export function validateRegisterForm(name: string, email: string, password: stri
   if (phoneError) errors.phone = phoneError;
   return errors;
 }
+
+export function validateRequisitionForm(locationId: string, categoryId: string, description: string, whatsapp: string, photo: File | null): FieldError {
+  const errors: FieldError = {};
+  const phoneError = validatePhone(whatsapp);
+
+  if (!locationId) errors.locationId = 'O local é obrigatório.';
+  if (!categoryId) errors.categoryId = 'A categoria é obrigatória.';
+  if (!description.trim()) errors.description = 'A descrição é obrigatória.';
+  else if (description.trim().length < 10) errors.description = 'A descrição deve ter pelo menos 10 caracteres.';
+  else if (description.trim().length > 2000) errors.description = 'A descrição deve ter no máximo 2.000 caracteres.';
+  if (phoneError) errors.requesterWhatsapp = phoneError;
+  if (photo && !['image/jpeg', 'image/png', 'image/webp'].includes(photo.type)) errors.photo = 'A foto deve estar no formato JPEG, PNG ou WebP.';
+  if (photo && photo.size > 5 * 1024 * 1024) errors.photo = 'A foto deve ter no máximo 5 MB.';
+
+  return errors;
+}

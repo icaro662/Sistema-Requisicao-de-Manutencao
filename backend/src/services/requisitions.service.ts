@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Requisition } from '../models/requisition.entity';
+import { Category } from '../models/category.entity';
+import { Location } from '../models/location.entity';
 import { RequisitionPriority } from '../core/enums/priority.enum';
 import { RequisitionStatus } from '../core/enums/status.enum';
 import { CreateRequisitionDto } from '../dtos/requisitions/create-requisition.dto';
@@ -24,6 +26,10 @@ export class RequisitionsService {
   constructor(
     @InjectRepository(Requisition)
     private readonly requisitionsRepository: Repository<Requisition>,
+    @InjectRepository(Location)
+    private readonly locationsRepository: Repository<Location>,
+    @InjectRepository(Category)
+    private readonly categoriesRepository: Repository<Category>,
   ) {}
 
   async findAll(query: RequisitionQuery, userRole: string, userId: string): Promise<{ data: Requisition[]; total: number }> {
@@ -72,6 +78,8 @@ export class RequisitionsService {
   }
 
   async create(dto: CreateRequisitionDto, userId: string, userName: string): Promise<Requisition> {
+    await this.ensureReferencesExist(dto.locationId, dto.categoryId);
+
     const count = await this.requisitionsRepository.count();
     const number = `REQ-${String(count + 1).padStart(5, '0')}`;
 
@@ -84,27 +92,57 @@ export class RequisitionsService {
       priority: dto.priority,
       requesterEmail: dto.requesterEmail,
       requesterPhone: dto.requesterPhone,
+      requesterWhatsapp: dto.requesterWhatsapp || null,
+      photoUrl: dto.photoUrl || null,
       status: RequisitionStatus.OPEN,
     });
 
     return this.requisitionsRepository.save(requisition);
   }
 
-  async update(id: string, dto: UpdateRequisitionDto): Promise<Requisition> {
+  async update(id: string, dto: UpdateRequisitionDto, userRole: string, userId: string): Promise<Requisition> {
     const requisition = await this.requisitionsRepository.findOne({ where: { id } });
     if (!requisition) throw new NotFoundException('Requisição não encontrada');
 
+    if (userRole === UserRole.REQUESTER && requisition.requesterId !== userId) {
+      throw new NotFoundException('Requisição não encontrada');
+    }
+
+    await this.ensureReferencesExist(dto.locationId, dto.categoryId);
+
+    if (dto.locationId !== undefined) requisition.locationId = dto.locationId;
+    if (dto.categoryId !== undefined) requisition.categoryId = dto.categoryId;
     if (dto.description !== undefined) requisition.description = dto.description;
     if (dto.priority !== undefined) requisition.priority = dto.priority;
+    if (dto.requesterEmail !== undefined) requisition.requesterEmail = dto.requesterEmail;
+    if (dto.requesterPhone !== undefined) requisition.requesterPhone = dto.requesterPhone;
+    if (dto.requesterWhatsapp !== undefined) requisition.requesterWhatsapp = dto.requesterWhatsapp;
+    if (dto.photoUrl !== undefined) requisition.photoUrl = dto.photoUrl;
 
     return this.requisitionsRepository.save(requisition);
+  }
+
+  private async ensureReferencesExist(locationId: string | undefined, categoryId: string | undefined): Promise<void> {
+    if (locationId !== undefined) {
+      const location = await this.locationsRepository.findOne({ where: { id: locationId } });
+      if (!location) throw new NotFoundException('Local não encontrado');
+    }
+
+    if (categoryId !== undefined) {
+      const category = await this.categoriesRepository.findOne({ where: { id: categoryId } });
+      if (!category) throw new NotFoundException('Categoria não encontrada');
+    }
   }
 
   async updateStatus(id: string, dto: UpdateStatusDto, userRole: string, userId: string): Promise<Requisition> {
     const requisition = await this.requisitionsRepository.findOne({ where: { id } });
     if (!requisition) throw new NotFoundException('Requisição não encontrada');
 
-    // Only executor assigned, manager, or admin can update status
+    if (userRole !== UserRole.EXECUTOR && userRole !== UserRole.MANAGER && userRole !== UserRole.ADMIN) {
+      throw new NotFoundException('Requisição não encontrada');
+    }
+
+    // Only the assigned executor, manager, or admin can update status.
     if (userRole === UserRole.EXECUTOR && requisition.executorId !== userId) {
       throw new NotFoundException('Requisição não encontrada');
     }
