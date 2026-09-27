@@ -36,6 +36,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
+import CategoryAdminPage from './CategoryAdminPage';
 import LocationAdminPage from './LocationAdminPage';
 import { apiErrorMessage } from './services/api';
 import { authService } from './services/authService';
@@ -931,6 +932,10 @@ function Shell() {
             <Route
               path="/locais"
               element={<LocationAdminPage />}
+            />
+            <Route
+              path="/categorias"
+              element={<CategoryAdminPage />}
             />
 
             <Route
