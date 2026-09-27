@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Category } from '../models/category.entity';
+import { Location } from '../models/location.entity';
 import { Requisition } from '../models/requisition.entity';
 import { RequisitionsController } from '../controllers/requisitions.controller';
 import { RequisitionsService } from '../services/requisitions.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Requisition])],
+  imports: [TypeOrmModule.forFeature([Requisition, Location, Category])],
   controllers: [RequisitionsController],
   providers: [RequisitionsService],
   exports: [RequisitionsService],
