@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Bell, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { maintenanceService } from './services/maintenanceService';
-import type { Notification, RequisitionStatus } from './types';
+import { maintenanceService } from '../services/maintenanceService';
+import type { Notification, RequisitionStatus } from '../types';
 
 const statusIcons: Record<RequisitionStatus, React.ReactNode> = {
   aberta: <Clock size={16} />,
