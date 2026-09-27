@@ -387,8 +387,8 @@ O frontend está conectado aos endpoints atualmente implementados para:
 - listagem e detalhes de requisições;
 - atualização de status de requisições;
 - consulta de usuários;
-- consulta de locais;
-- consulta de categorias;
+- cadastro de locais (listar, criar, editar e excluir);
+- cadastro de categorias de manutenção (listar, criar, editar e excluir);
 - consulta de executores.
 
 O login e o registro emitem access e refresh tokens. O frontend envia o access token nas requisições protegidas e tenta renová-lo automaticamente quando ele expira. O refresh token é rotacionado a cada renovação e o token anterior é invalidado.
