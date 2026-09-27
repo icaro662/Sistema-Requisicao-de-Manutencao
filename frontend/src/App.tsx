@@ -37,6 +37,9 @@ import {
   X,
 } from 'lucide-react';
 
+import SystemSettingsPage from './SystemSettingsPage';
+import CategoryAdminPage from './CategoryAdminPage';
+import LocationAdminPage from './LocationAdminPage';
 import { apiErrorMessage } from './services/api';
 import { authService } from './services/authService';
 import { maintenanceService } from './services/maintenanceService';
@@ -942,6 +945,19 @@ function Shell() {
             <Route
               path="/users"
               element={<AdminUsersPage />}
+              
+            />
+            <Route
+              path="/locais"
+              element={<LocationAdminPage />}
+            />
+            <Route
+              path="/categorias"
+              element={<CategoryAdminPage />}
+            />
+            <Route
+              path="/configuracoes"
+              element={<SystemSettingsPage />}
             />
 
             <Route
