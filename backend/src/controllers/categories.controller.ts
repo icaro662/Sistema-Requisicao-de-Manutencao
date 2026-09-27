@@ -1,12 +1,10 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtGuard } from '../core/guards/jwt.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { CategoriesService } from '../services/categories.service';
 import { CreateCategoryDto } from '../dtos/categories/create-category.dto';
 import { UpdateCategoryDto } from '../dtos/categories/update-category.dto';
-import { RequestUser } from '../common/interfaces/request-user.interface';
 import { UserRole } from '../models/user.entity';
 
 @Controller('categorias')
@@ -29,5 +27,11 @@ export class CategoriesController {
   @Roles(UserRole.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
     return this.categoriesService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  remove(@Param('id') id: string) {
+    return this.categoriesService.remove(id);
   }
 }
