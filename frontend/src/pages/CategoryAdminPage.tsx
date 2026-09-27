@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Tag, Edit2, Plus, Search } from 'lucide-react';
+import { Tag, Edit2, Plus, Search, Trash2 } from 'lucide-react';
 import { apiErrorMessage } from '../services/api';
 import { maintenanceService } from '../services/maintenanceService';
 import type { Category } from '../types';
@@ -43,6 +43,22 @@ export default function CategoryAdminPage() {
     onError: (reason) => setError(apiErrorMessage(reason)),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => maintenanceService.deleteCategory(id),
+    onSuccess: (_data, id) => {
+      if (editingId === id) resetForm();
+      void queryClient.invalidateQueries({ queryKey: ['categories'] });
+    },
+    onError: (reason) => setError(apiErrorMessage(reason)),
+  });
+
+  const handleDelete = (category: Category) => {
+    const confirmed = window.confirm(`Excluir a categoria "${category.name}"? Esta ação não pode ser desfeita.`);
+    if (!confirmed) return;
+    setError('');
+    deleteMutation.mutate(category.id);
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setError('');
@@ -68,7 +84,7 @@ export default function CategoryAdminPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
   const filteredCategories = categoriesQuery.data?.filter((category) =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -196,14 +212,25 @@ export default function CategoryAdminPage() {
                       </span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(category)}
-                    style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: '4px' }}
-                    title="Editar categoria"
-                  >
-                    <Edit2 size={16} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(category)}
+                      style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: '4px' }}
+                      title="Editar categoria"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(category)}
+                      disabled={deleteMutation.isPending}
+                      style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px' }}
+                      title="Excluir categoria"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
               {!filteredCategories?.length && (
