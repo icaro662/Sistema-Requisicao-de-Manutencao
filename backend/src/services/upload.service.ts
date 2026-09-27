@@ -14,11 +14,18 @@ export class UploadService {
   ) {}
 
   async register(filename: string, userId: string): Promise<void> {
+    const safeFilename = basename(filename);
     const uploadedFile = this.uploadedFilesRepository.create({
-      filename: basename(filename),
+      filename: safeFilename,
       ownerId: userId,
     });
-    await this.uploadedFilesRepository.save(uploadedFile);
+
+    try {
+      await this.uploadedFilesRepository.save(uploadedFile);
+    } catch (error) {
+      await unlink(join(uploadDirectory, safeFilename)).catch(() => undefined);
+      throw error;
+    }
   }
 
   async isOwner(filename: string, userId: string): Promise<boolean> {
@@ -39,6 +46,7 @@ export class UploadService {
       await unlink(join(uploadDirectory, safeFilename));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        await this.uploadedFilesRepository.delete({ filename: safeFilename });
         throw new NotFoundException('Arquivo não encontrado');
       }
       throw error;
