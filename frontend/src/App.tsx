@@ -907,7 +907,11 @@ function Shell() {
 
             <Route
               path="/reports"
-              element={<ReportsPage />}
+              element={
+                role === 'gestor' || role === 'admin'
+                  ? <ReportsPage />
+                  : <Navigate to="/" replace />
+              }
             />
 
             <Route

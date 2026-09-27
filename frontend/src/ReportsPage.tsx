@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart3, Download, RefreshCw } from 'lucide-react';
+import { apiErrorMessage } from './services/api';
 import { maintenanceService } from './services/maintenanceService';
 import type { Category, Location, RequisitionPriority, RequisitionStatus, User } from './types';
 
@@ -34,15 +35,14 @@ export default function ReportsPage() {
   });
   const [appliedFilters, setAppliedFilters] = useState(filters);
   const [exporting, setExporting] = useState<'pdf' | 'excel' | null>(null);
+  const [exportError, setExportError] = useState('');
   const locations = useQuery({ queryKey: ['locations'], queryFn: maintenanceService.locations });
   const categories = useQuery({ queryKey: ['categories'], queryFn: maintenanceService.categories });
   const executors = useQuery({ queryKey: ['executors'], queryFn: maintenanceService.executors });
   const report = useQuery({
     queryKey: ['report', appliedFilters],
     queryFn: () => maintenanceService.report({
-      ...appliedFilters,
-      priority: appliedFilters.priority as RequisitionPriority || undefined,
-      status: appliedFilters.status as RequisitionStatus || undefined,
+      ...toReportFilters(appliedFilters),
     }),
   });
 
@@ -63,22 +63,27 @@ export default function ReportsPage() {
 
   const exportReport = async (format: 'pdf' | 'excel') => {
     setExporting(format);
+    setExportError('');
     try {
-      const blob = await maintenanceService.exportReport(format, {
-        ...appliedFilters,
-        priority: appliedFilters.priority as RequisitionPriority || undefined,
-        status: appliedFilters.status as RequisitionStatus || undefined,
-      });
+      const blob = await maintenanceService.exportReport(format, toReportFilters(appliedFilters));
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = format === 'pdf' ? 'relatorio-requisicoes.pdf' : 'relatorio-requisicoes.xlsx';
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => {
+        link.remove();
+        URL.revokeObjectURL(url);
+      }, 0);
+    } catch (reason) {
+      setExportError(apiErrorMessage(reason));
     } finally {
       setExporting(null);
     }
   };
+
+  const reportError = report.isError ? apiErrorMessage(report.error) : '';
 
   return <>
     <div className="page-heading">
@@ -94,8 +99,8 @@ export default function ReportsPage() {
         <div><p className="eyebrow">Consulta personalizada</p><h2>Filtros do relatório</h2></div>
       </div>
       <form className="report-filters" onSubmit={submit}>
-        <label>Data inicial<input type="date" value={filters.from} onChange={(event) => updateFilter('from', event.target.value ? `${event.target.value}T00:00:00.000Z` : '')} /></label>
-        <label>Data final<input type="date" value={filters.to} onChange={(event) => updateFilter('to', event.target.value ? `${event.target.value}T23:59:59.999Z` : '')} /></label>
+        <label>Data inicial<input type="date" value={filters.from} onChange={(event) => updateFilter('from', event.target.value)} /></label>
+        <label>Data final<input type="date" value={filters.to} onChange={(event) => updateFilter('to', event.target.value)} /></label>
         <label>Local<select value={filters.locationId} onChange={(event) => updateFilter('locationId', event.target.value)}><option value="">Todos os locais</option>{locations.data?.map((item: Location) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
         <label>Executor<select value={filters.executorId} onChange={(event) => updateFilter('executorId', event.target.value)}><option value="">Todos os executores</option>{executors.data?.map((item: User) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
         <label>Categoria<select value={filters.categoryId} onChange={(event) => updateFilter('categoryId', event.target.value)}><option value="">Todas as categorias</option>{categories.data?.map((item: Category) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
@@ -104,6 +109,9 @@ export default function ReportsPage() {
         <div className="report-filter-actions"><button className="primary-button" type="submit"><BarChart3 size={16} /> Gerar relatório</button><button className="secondary-button" type="button" onClick={clear}>Limpar</button></div>
       </form>
     </section>
+
+    {reportError && <p className="form-error">{reportError}</p>}
+    {exportError && <p className="form-error">{exportError}</p>}
 
     <section className="report-summary-grid">
       <div className="metric-card"><div><span>Total encontrado</span><strong>{report.data?.total ?? 0}</strong></div></div>
@@ -123,7 +131,21 @@ export default function ReportsPage() {
 
     <section className="panel table-panel">
       <div className="panel-heading"><div><p className="eyebrow">Resultado</p><h2>Requisições encontradas</h2></div><div className="report-export-actions">{report.isFetching && <RefreshCw className="spin" size={18} />}<button className="secondary-button compact" disabled={Boolean(exporting) || !report.data?.total} onClick={() => void exportReport('pdf')}><Download size={15} />{exporting === 'pdf' ? 'Gerando...' : 'PDF'}</button><button className="secondary-button compact" disabled={Boolean(exporting) || !report.data?.total} onClick={() => void exportReport('excel')}><Download size={15} />{exporting === 'excel' ? 'Gerando...' : 'Excel'}</button></div></div>
-      {!report.data?.rows.length ? <div className="empty-state"><BarChart3 size={23} /><strong>Nenhum resultado encontrado</strong><span>Ajuste os filtros para consultar outras requisições.</span></div> : <div className="table-wrap"><table><thead><tr><th>Número</th><th>Descrição</th><th>Prioridade</th><th>Status</th><th>Data</th></tr></thead><tbody>{report.data.rows.map((row) => <tr key={row.id}><td>{row.number}</td><td>{row.description}</td><td><span className={`priority ${row.priority}`}>{row.priority}</span></td><td><span className={`status-badge ${row.status}`}>{row.status ? statusLabels[row.status] : '—'}</span></td><td>{row.createdAt ? new Date(row.createdAt).toLocaleDateString('pt-BR') : '—'}</td></tr>)}</tbody></table></div>}
+      {reportError ? <div className="empty-state"><strong>Não foi possível carregar o relatório</strong><span>Verifique os filtros e tente novamente.</span></div> : !report.data?.rows.length ? <div className="empty-state"><BarChart3 size={23} /><strong>Nenhum resultado encontrado</strong><span>Ajuste os filtros para consultar outras requisições.</span></div> : <div className="table-wrap"><table><thead><tr><th>Número</th><th>Descrição</th><th>Prioridade</th><th>Status</th><th>Data</th></tr></thead><tbody>{report.data.rows.map((row) => <tr key={row.id}><td>{row.number}</td><td>{row.description}</td><td><span className={`priority ${row.priority}`}>{row.priority}</span></td><td><span className={`status-badge ${row.status}`}>{row.status ? statusLabels[row.status] : '—'}</span></td><td>{row.createdAt ? new Date(row.createdAt).toLocaleDateString('pt-BR') : '—'}</td></tr>)}</tbody></table></div>}
     </section>
   </>;
+}
+
+type ReportFilterState = { from: string; to: string; locationId: string; executorId: string; categoryId: string; priority: string; status: string };
+
+function toReportFilters(filters: ReportFilterState) {
+  return {
+    from: filters.from ? `${filters.from}T00:00:00.000Z` : undefined,
+    to: filters.to ? `${filters.to}T23:59:59.999Z` : undefined,
+    locationId: filters.locationId || undefined,
+    executorId: filters.executorId || undefined,
+    categoryId: filters.categoryId || undefined,
+    priority: filters.priority as RequisitionPriority || undefined,
+    status: filters.status as RequisitionStatus || undefined,
+  };
 }

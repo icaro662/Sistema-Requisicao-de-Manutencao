@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import PDFDocument from 'pdfkit';
 import ExcelJS from 'exceljs';
@@ -8,6 +8,12 @@ import { FilterReportDto } from '../dtos/reports/filter-report.dto';
 import { ReportDto } from '../dtos/reports/report.dto';
 import { Requisition } from '../models/requisition.entity';
 
+const MAX_REPORT_ROWS = 5000;
+
+function escapeExcelValue(value: string): string {
+  return /^[=+\-@]/.test(value) ? `'${value}` : value;
+}
+
 @Injectable()
 export class ReportsService {
   constructor(
@@ -16,6 +22,10 @@ export class ReportsService {
   ) {}
 
   async findReport(filters: FilterReportDto): Promise<ReportDto> {
+    if (filters.from && filters.to && new Date(filters.from) > new Date(filters.to)) {
+      throw new BadRequestException('A data inicial não pode ser posterior à data final');
+    }
+
     const query = this.requisitionsRepository.createQueryBuilder('requisition');
 
     if (filters.from) query.andWhere('requisition.createdAt >= :from', { from: filters.from });
@@ -26,13 +36,13 @@ export class ReportsService {
     if (filters.priority) query.andWhere('requisition.priority = :priority', { priority: filters.priority });
     if (filters.status) query.andWhere('requisition.status = :status', { status: filters.status });
 
-    const rows = await query.orderBy('requisition.createdAt', 'DESC').getMany();
+    const rows = await query.orderBy('requisition.createdAt', 'DESC').take(MAX_REPORT_ROWS).getMany();
     const byStatus = rows.reduce<Record<string, number>>((summary, requisition) => {
       summary[requisition.status] = (summary[requisition.status] ?? 0) + 1;
       return summary;
     }, {});
     const byPeriod = rows.reduce<Record<string, number>>((summary, requisition) => {
-      const period = requisition.createdAt.toISOString().slice(0, 7);
+      const period = requisition.createdAt.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }).slice(0, 7);
       summary[period] = (summary[period] ?? 0) + 1;
       return summary;
     }, {});
@@ -83,12 +93,12 @@ export class ReportsService {
       { header: 'Criada em', key: 'createdAt', width: 22 },
     ];
     report.rows.forEach((row) => worksheet.addRow({
-      number: row.number,
-      status: row.status,
-      priority: row.priority,
-      description: row.description,
-      locationId: row.locationId,
-      categoryId: row.categoryId,
+      number: escapeExcelValue(row.number),
+      status: escapeExcelValue(row.status),
+      priority: escapeExcelValue(row.priority),
+      description: escapeExcelValue(row.description),
+      locationId: escapeExcelValue(row.locationId),
+      categoryId: escapeExcelValue(row.categoryId),
       createdAt: row.createdAt,
     }));
     worksheet.getRow(1).font = { bold: true };
