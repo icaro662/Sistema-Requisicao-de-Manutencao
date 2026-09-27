@@ -27,9 +27,11 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "dotenv": "^17.4.1",
+    "exceljs": "^4.4.0",
     "mysql2": "^3.14.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pdfkit": "^0.20.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "typeorm": "^0.3.22"
@@ -44,11 +46,17 @@
     "@types/multer": "^2.2.0",
     "@types/node": "^22.13.0",
     "@types/passport-jwt": "^4.0.1",
+    "@types/pdfkit": "^0.17.6",
     "jest": "^30.5.2",
     "ts-jest": "^29.4.14",
     "typescript": "^5.7.3"
   },
   "allowScripts": {
     "bcrypt@6.0.0": true
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "11.1.1"
+    }
   }
 }

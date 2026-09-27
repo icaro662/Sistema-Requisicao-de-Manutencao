@@ -48,6 +48,7 @@ import MyRequisitionsPage from './MyRequisitionsPage';
 import ExecutorPage from './ExecutorPage';
 import ManagerPage from './ManagerPage';
 import NotificationsPage from './NotificationsPage';
+import ReportsPage from './ReportsPage';
 
 import type {
   RegisterInput,
@@ -695,6 +696,12 @@ function Shell() {
       roles: ['gestor'],
     },
     {
+      to: '/reports',
+      label: 'Relatórios',
+      icon: BarChart3,
+      roles: ['gestor', 'admin'],
+    },
+    {
       to: '/notifications',
       label: 'Notificações',
       icon: Bell,
@@ -896,6 +903,15 @@ function Shell() {
             <Route
               path="/manager"
               element={<ManagerPage />}
+            />
+
+            <Route
+              path="/reports"
+              element={
+                role === 'gestor' || role === 'admin'
+                  ? <ReportsPage />
+                  : <Navigate to="/" replace />
+              }
             />
 
             <Route
