@@ -92,9 +92,13 @@ export class RequisitionsService {
     return this.requisitionsRepository.save(requisition);
   }
 
-  async update(id: string, dto: UpdateRequisitionDto): Promise<Requisition> {
+  async update(id: string, dto: UpdateRequisitionDto, userRole: string, userId: string): Promise<Requisition> {
     const requisition = await this.requisitionsRepository.findOne({ where: { id } });
     if (!requisition) throw new NotFoundException('Requisição não encontrada');
+
+    if (userRole === UserRole.REQUESTER && requisition.requesterId !== userId) {
+      throw new NotFoundException('Requisição não encontrada');
+    }
 
     if (dto.locationId !== undefined) requisition.locationId = dto.locationId;
     if (dto.categoryId !== undefined) requisition.categoryId = dto.categoryId;
