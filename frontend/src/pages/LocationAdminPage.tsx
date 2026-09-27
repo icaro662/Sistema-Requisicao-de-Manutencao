@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MapPin, Edit2, Plus, Search } from 'lucide-react';
+import { MapPin, Edit2, Plus, Search, Trash2 } from 'lucide-react';
 import { apiErrorMessage } from '../services/api';
 import { maintenanceService } from '../services/maintenanceService';
 import type { Location } from '../types';
@@ -43,6 +43,22 @@ export default function LocationAdminPage() {
     onError: (reason) => setError(apiErrorMessage(reason)),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => maintenanceService.deleteLocation(id),
+    onSuccess: (_data, id) => {
+      if (editingId === id) resetForm();
+      void queryClient.invalidateQueries({ queryKey: ['locations'] });
+    },
+    onError: (reason) => setError(apiErrorMessage(reason)),
+  });
+
+  const handleDelete = (location: Location) => {
+    const confirmed = window.confirm(`Excluir o local "${location.name}"? Esta ação não pode ser desfeita.`);
+    if (!confirmed) return;
+    setError('');
+    deleteMutation.mutate(location.id);
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setError('');
@@ -68,7 +84,7 @@ export default function LocationAdminPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
   // Filtrar locais com base na busca
   const filteredLocations = locationsQuery.data?.filter((location) =>
@@ -197,14 +213,25 @@ export default function LocationAdminPage() {
                       </span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(location)}
-                    style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: '4px' }}
-                    title="Editar local"
-                  >
-                    <Edit2 size={16} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(location)}
+                      style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: '4px' }}
+                      title="Editar local"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(location)}
+                      disabled={deleteMutation.isPending}
+                      style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px' }}
+                      title="Excluir local"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
               {!filteredLocations?.length && (

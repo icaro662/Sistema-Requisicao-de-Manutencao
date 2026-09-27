@@ -1,12 +1,10 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtGuard } from '../core/guards/jwt.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { LocationsService } from '../services/locations.service';
 import { CreateLocationDto } from '../dtos/locations/create-location.dto';
 import { UpdateLocationDto } from '../dtos/locations/update-location.dto';
-import { RequestUser } from '../common/interfaces/request-user.interface';
 import { UserRole } from '../models/user.entity';
 
 @Controller('locais')
@@ -29,5 +27,11 @@ export class LocationsController {
   @Roles(UserRole.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateLocationDto) {
     return this.locationsService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  remove(@Param('id') id: string) {
+    return this.locationsService.remove(id);
   }
 }
