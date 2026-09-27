@@ -30,5 +30,11 @@ describe('ReportsService', () => {
     expect(queryBuilder.andWhere).toHaveBeenCalledTimes(7);
     expect(report.total).toBe(3);
     expect(report.byStatus).toEqual({ aberta: 2, concluida: 1 });
+
+    const pdf = await service.exportPdf({ status: RequisitionStatus.OPEN });
+    const excel = await service.exportExcel({ status: RequisitionStatus.OPEN });
+
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(excel.subarray(0, 2).toString()).toBe('PK');
   });
 });

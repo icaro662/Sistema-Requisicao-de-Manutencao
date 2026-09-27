@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, StreamableFile, UseGuards } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
 import { FilterReportDto } from '../dtos/reports/filter-report.dto';
 import { JwtGuard } from '../core/guards/jwt.guard';
@@ -18,8 +18,22 @@ export class ReportsController {
   }
 
   @Get('export-pdf')
-  exportPdf() { return this.reportsService.exportPdf(); }
+  @Roles(UserRole.MANAGER, UserRole.ADMIN)
+  async exportPdf(@Query() filters: FilterReportDto) {
+    const file = await this.reportsService.exportPdf(filters);
+    return new StreamableFile(file, {
+      type: 'application/pdf',
+      disposition: 'attachment; filename="relatorio-requisicoes.pdf"',
+    });
+  }
 
   @Get('export-excel')
-  exportExcel() { return this.reportsService.exportExcel(); }
+  @Roles(UserRole.MANAGER, UserRole.ADMIN)
+  async exportExcel(@Query() filters: FilterReportDto) {
+    const file = await this.reportsService.exportExcel(filters);
+    return new StreamableFile(file, {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      disposition: 'attachment; filename="relatorio-requisicoes.xlsx"',
+    });
+  }
 }
