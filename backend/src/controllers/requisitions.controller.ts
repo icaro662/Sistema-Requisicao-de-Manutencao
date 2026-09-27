@@ -3,8 +3,9 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtGuard } from '../core/guards/jwt.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
-import { RequisitionsService, RequisitionQuery } from '../services/requisitions.service';
+import { RequisitionsService } from '../services/requisitions.service';
 import { CreateRequisitionDto } from '../dtos/requisitions/create-requisition.dto';
+import { FilterRequisitionDto } from '../dtos/requisitions/filter-requisition.dto';
 import { RegisterExecutionDto } from '../dtos/requisitions/register-execution.dto';
 import { UpdateRequisitionDto } from '../dtos/requisitions/update-requisition.dto';
 import { UpdateStatusDto } from '../dtos/requisitions/update-status.dto';
@@ -18,7 +19,7 @@ export class RequisitionsController {
   constructor(private readonly requisitionsService: RequisitionsService) {}
 
   @Get()
-  findAll(@Query() query: RequisitionQuery, @CurrentUser() user: RequestUser) {
+  findAll(@Query() query: FilterRequisitionDto, @CurrentUser() user: RequestUser) {
     return this.requisitionsService.findAll(query, user.role, user.id);
   }
 

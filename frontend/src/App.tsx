@@ -696,7 +696,7 @@ function Shell() {
       to: '/manager',
       label: 'Painel do gestor',
       icon: Users,
-      roles: ['gestor'],
+      roles: ['gestor', 'admin'],
     },
     {
       to: '/reports',
@@ -905,7 +905,11 @@ function Shell() {
 
             <Route
               path="/manager"
-              element={<ManagerPage />}
+              element={
+                role === 'gestor' || role === 'admin'
+                  ? <ManagerPage />
+                  : <Navigate to="/" replace />
+              }
             />
 
             <Route
@@ -1014,7 +1018,7 @@ function Dashboard() {
 
   const summary = useQuery({
     queryKey: ['dashboard'],
-    queryFn: maintenanceService.dashboard,
+    queryFn: () => maintenanceService.dashboard(),
   });
 
   const requisitions = useQuery({
@@ -1093,19 +1097,12 @@ function Dashboard() {
 
       <section className="metric-grid">
         <Metric
-          label="Todas as solicitações"
-          value={data?.total ?? 0}
-          icon={<ClipboardList />}
-          tone="blue"
-        />
-
-        <Metric
           label="Abertas"
           value={
             data?.byStatus?.aberta ?? 0
           }
-          icon={<Activity />}
-          tone="mint"
+          icon={<ClipboardList />}
+          tone="blue"
         />
 
         <Metric
@@ -1116,6 +1113,16 @@ function Dashboard() {
           }
           icon={<ArrowUpRight />}
           tone="gold"
+        />
+
+        <Metric
+          label="Aguardando material"
+          value={
+            data?.byStatus
+              ?.aguardando_material ?? 0
+          }
+          icon={<Clock />}
+          tone="mint"
         />
 
         <Metric

@@ -1,25 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Requisition } from '../models/requisition.entity';
 import { Category } from '../models/category.entity';
 import { Location } from '../models/location.entity';
-import { RequisitionPriority } from '../core/enums/priority.enum';
 import { RequisitionStatus } from '../core/enums/status.enum';
 import { CreateRequisitionDto } from '../dtos/requisitions/create-requisition.dto';
+import { FilterRequisitionDto } from '../dtos/requisitions/filter-requisition.dto';
 import { RegisterExecutionDto } from '../dtos/requisitions/register-execution.dto';
 import { UpdateRequisitionDto } from '../dtos/requisitions/update-requisition.dto';
 import { UpdateStatusDto } from '../dtos/requisitions/update-status.dto';
 import { UserRole } from '../models/user.entity';
-
-export interface RequisitionQuery {
-  status?: RequisitionStatus;
-  priority?: RequisitionPriority;
-  search?: string;
-  requesterId?: string;
-  executorId?: string;
-  locationId?: string;
-}
 
 @Injectable()
 export class RequisitionsService {
@@ -32,26 +23,26 @@ export class RequisitionsService {
     private readonly categoriesRepository: Repository<Category>,
   ) {}
 
-  async findAll(query: RequisitionQuery, userRole: string, userId: string): Promise<{ data: Requisition[]; total: number }> {
+  async findAll(query: FilterRequisitionDto, userRole: string, userId: string): Promise<{ data: Requisition[]; total: number }> {
+    if (query.from && query.to && new Date(query.from) > new Date(query.to)) {
+      throw new BadRequestException('A data inicial não pode ser posterior à data final');
+    }
+
     const qb = this.requisitionsRepository.createQueryBuilder('r');
 
-    // Role-based filtering
     if (userRole === UserRole.REQUESTER) {
       qb.andWhere('r.requesterId = :userId', { userId });
     } else if (userRole === UserRole.EXECUTOR) {
       qb.andWhere('(r.executorId = :userId OR r.executorId IS NULL)', { userId });
     }
-    // MANAGER and ADMIN see all
 
-    if (query.status) {
-      qb.andWhere('r.status = :status', { status: query.status });
-    }
-    if (query.priority) {
-      qb.andWhere('r.priority = :priority', { priority: query.priority });
-    }
-    if (query.locationId) {
-      qb.andWhere('r.locationId = :locationId', { locationId: query.locationId });
-    }
+    if (query.from) qb.andWhere('r.createdAt >= :from', { from: query.from });
+    if (query.to) qb.andWhere('r.createdAt <= :to', { to: query.to });
+    if (query.locationId) qb.andWhere('r.locationId = :locationId', { locationId: query.locationId });
+    if (query.executorId) qb.andWhere('r.executorId = :executorId', { executorId: query.executorId });
+    if (query.categoryId) qb.andWhere('r.categoryId = :categoryId', { categoryId: query.categoryId });
+    if (query.priority) qb.andWhere('r.priority = :priority', { priority: query.priority });
+    if (query.status) qb.andWhere('r.status = :status', { status: query.status });
     if (query.search) {
       qb.andWhere('(r.description LIKE :search OR r.number LIKE :search)', { search: `%${query.search}%` });
     }
