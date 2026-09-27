@@ -1,6 +1,8 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { ExecutionRecord } from './execution-record.entity';
 import { RequisitionPriority } from '../core/enums/priority.enum';
 import { RequisitionStatus } from '../core/enums/status.enum';
+import { RequestMaterial } from './request-material.entity';
 
 @Entity('requisicoes')
 export class Requisition {
@@ -54,6 +56,12 @@ export class Requisition {
 
   @Column({ name: 'observacoes', type: 'text', nullable: true })
   observations: string | null;
+
+  @OneToMany(() => RequestMaterial, (material) => material.requisition)
+  requestMaterials: RequestMaterial[];
+
+  @OneToMany(() => ExecutionRecord, (record) => record.requisition)
+  executionRecords: ExecutionRecord[];
 
   @CreateDateColumn({ name: 'criado_em' })
   createdAt: Date;

@@ -55,13 +55,12 @@
     "typescript": "^5.7.3"
   },
   "allowScripts": {
-    "bcrypt@6.0.0": true
+    "bcrypt@6.0.0": true,
+    "unrs-resolver@1.12.2": true
   },
   "overrides": {
     "exceljs": {
       "uuid": "11.1.1"
-    },
-    "bcrypt@6.0.0": true,
-    "unrs-resolver@1.12.2": true
+    }
   }
 }

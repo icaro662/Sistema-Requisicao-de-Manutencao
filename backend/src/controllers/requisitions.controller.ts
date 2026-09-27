@@ -52,6 +52,12 @@ export class RequisitionsController {
     return this.requisitionsService.assignExecutor(id, dto.executorId, _user.role);
   }
 
+  @Post(':id/assumir')
+  @Roles(UserRole.EXECUTOR)
+  selfAssign(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.requisitionsService.assignExecutor(id, user.id, 'executor');
+  }
+
   @Post(':id/execucao')
   @Roles(UserRole.EXECUTOR)
   registerExecution(@Param('id') id: string, @Body() dto: RegisterExecutionDto, @CurrentUser() user: RequestUser) {
