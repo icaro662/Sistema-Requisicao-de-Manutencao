@@ -40,4 +40,16 @@ describe('DashboardService', () => {
       cancelada: 0,
     });
   });
+
+  it('rejects inverted date range in dashboard summary', async () => {
+    const repository = { createQueryBuilder: jest.fn() };
+    const service = new DashboardService(repository as never);
+
+    await expect(service.summary(UserRole.MANAGER, 'manager-id', {
+      from: '2026-02-01T00:00:00.000Z',
+      to: '2026-01-01T00:00:00.000Z',
+    })).rejects.toThrow('A data inicial não pode ser posterior à data final');
+
+    expect(repository.createQueryBuilder).not.toHaveBeenCalled();
+  });
 });

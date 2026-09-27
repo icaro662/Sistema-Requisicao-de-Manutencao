@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Requisition } from '../models/requisition.entity';
@@ -14,6 +14,10 @@ export class DashboardService {
   ) {}
 
   async summary(userRole: string, userId: string, filters: DashboardFilterDto = {}): Promise<{ total: number; byStatus: Record<string, number> }> {
+    if (filters.from && filters.to && new Date(filters.from) > new Date(filters.to)) {
+      throw new BadRequestException('A data inicial não pode ser posterior à data final');
+    }
+
     const qb = this.requisitionsRepository.createQueryBuilder('r');
 
     // Role-based filtering
