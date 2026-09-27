@@ -998,7 +998,7 @@ function Dashboard() {
 
   const summary = useQuery({
     queryKey: ['dashboard'],
-    queryFn: maintenanceService.dashboard,
+    queryFn: () => maintenanceService.dashboard(),
   });
 
   const requisitions = useQuery({

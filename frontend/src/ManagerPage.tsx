@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BarChart3, ClipboardList, Users } from 'lucide-react';
+import { BarChart3, ClipboardList, Filter, Users } from 'lucide-react';
 import { apiErrorMessage } from './services/api';
 import { maintenanceService } from './services/maintenanceService';
-import type { Requisition, RequisitionStatus, User } from './types';
+import type { Category, DashboardFilters, Location, Requisition, RequisitionPriority, RequisitionStatus, User } from './types';
 
 const statusLabels: Record<RequisitionStatus, string> = {
   aberta: 'Aberta',
@@ -14,15 +14,32 @@ const statusLabels: Record<RequisitionStatus, string> = {
   cancelada: 'Cancelada',
 };
 
+const priorityOptions: Array<{ value: RequisitionPriority; label: string }> = [
+  { value: 'baixa', label: 'Baixa' },
+  { value: 'media', label: 'Média' },
+  { value: 'alta', label: 'Alta' },
+  { value: 'urgente', label: 'Urgente' },
+];
+
 export default function ManagerPage() {
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [filters, setFilters] = useState({ from: '', to: '', locationId: '', executorId: '', categoryId: '', priority: '', status: '' });
+  const [appliedFilters, setAppliedFilters] = useState(filters);
 
   const requisitionsQuery = useQuery({
     queryKey: ['requisitions', 'manager'],
     queryFn: () => maintenanceService.requisitions(),
   });
+
+  const dashboardQuery = useQuery({
+    queryKey: ['dashboard', 'manager', appliedFilters],
+    queryFn: () => maintenanceService.dashboard(toDashboardFilters(appliedFilters)),
+  });
+
+  const locationsQuery = useQuery({ queryKey: ['locations'], queryFn: maintenanceService.locations });
+  const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: maintenanceService.categories });
 
   const executorsQuery = useQuery({
     queryKey: ['executors'],
@@ -45,6 +62,18 @@ export default function ManagerPage() {
   const unassigned = requisitions.filter((r: Requisition) => !r.executorId && r.status === 'aberta');
   const inProgress = requisitions.filter((r: Requisition) => r.executorId && r.status !== 'concluida' && r.status !== 'cancelada');
   const completed = requisitions.filter((r: Requisition) => r.status === 'concluida' || r.status === 'cancelada');
+  const metrics = dashboardQuery.data?.byStatus ?? {};
+
+  const submitFilters = (event: React.FormEvent) => {
+    event.preventDefault();
+    setAppliedFilters(filters);
+  };
+
+  const clearFilters = () => {
+    const empty = { from: '', to: '', locationId: '', executorId: '', categoryId: '', priority: '', status: '' };
+    setFilters(empty);
+    setAppliedFilters(empty);
+  };
 
   return <>
     <div className="page-heading">
@@ -56,28 +85,43 @@ export default function ManagerPage() {
 
     {error && <p className="form-error">{error}</p>}
 
+    <section className="panel report-filters-panel">
+      <div className="panel-heading"><div><p className="eyebrow">Indicadores</p><h2>Filtrar painel</h2></div><Filter size={19} /></div>
+      <form className="report-filters" onSubmit={submitFilters}>
+        <label>Data inicial<input type="date" value={filters.from} onChange={(event) => setFilters({ ...filters, from: event.target.value })} /></label>
+        <label>Data final<input type="date" value={filters.to} onChange={(event) => setFilters({ ...filters, to: event.target.value })} /></label>
+        <label>Local<select value={filters.locationId} onChange={(event) => setFilters({ ...filters, locationId: event.target.value })}><option value="">Todos</option>{locationsQuery.data?.map((item: Location) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <label>Executor<select value={filters.executorId} onChange={(event) => setFilters({ ...filters, executorId: event.target.value })}><option value="">Todos</option>{executorsQuery.data?.map((item: User) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <label>Categoria<select value={filters.categoryId} onChange={(event) => setFilters({ ...filters, categoryId: event.target.value })}><option value="">Todas</option>{categoriesQuery.data?.map((item: Category) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <label>Prioridade<select value={filters.priority} onChange={(event) => setFilters({ ...filters, priority: event.target.value })}><option value="">Todas</option>{priorityOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+        <label>Status<select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}><option value="">Todos</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <div className="report-filter-actions"><button className="primary-button" type="submit"><Filter size={16} /> Aplicar filtros</button><button className="secondary-button" type="button" onClick={clearFilters}>Limpar</button></div>
+      </form>
+    </section>
+
     <div className="metric-grid">
       <div className="metric-card">
         <div className="metric-icon blue"><ClipboardList size={19} /></div>
         <div>
-          <span>Aguardando atribuição</span>
-          <strong>{unassigned.length}</strong>
+          <span>Abertas</span>
+          <strong>{metrics.aberta ?? 0}</strong>
         </div>
       </div>
       <div className="metric-card">
         <div className="metric-icon gold"><Users size={19} /></div>
         <div>
-          <span>Em andamento</span>
-          <strong>{inProgress.length}</strong>
+          <span>Em atendimento</span>
+          <strong>{metrics.em_atendimento ?? 0}</strong>
         </div>
       </div>
       <div className="metric-card">
         <div className="metric-icon mint"><BarChart3 size={19} /></div>
         <div>
-          <span>Concluídas</span>
-          <strong>{completed.length}</strong>
+          <span>Aguardando material</span>
+          <strong>{metrics.aguardando_material ?? 0}</strong>
         </div>
       </div>
+      <div className="metric-card"><div className="metric-icon rose"><BarChart3 size={19} /></div><div><span>Concluídas</span><strong>{metrics.concluida ?? 0}</strong></div></div>
     </div>
 
     <div className="content-grid">
@@ -176,4 +220,18 @@ export default function ManagerPage() {
       </section>
     )}
   </>;
+}
+
+type ManagerFilterState = { from: string; to: string; locationId: string; executorId: string; categoryId: string; priority: string; status: string };
+
+function toDashboardFilters(filters: ManagerFilterState): DashboardFilters {
+  return {
+    from: filters.from ? `${filters.from}T00:00:00.000Z` : undefined,
+    to: filters.to ? `${filters.to}T23:59:59.999Z` : undefined,
+    locationId: filters.locationId || undefined,
+    executorId: filters.executorId || undefined,
+    categoryId: filters.categoryId || undefined,
+    priority: filters.priority as RequisitionPriority || undefined,
+    status: filters.status as RequisitionStatus || undefined,
+  };
 }
