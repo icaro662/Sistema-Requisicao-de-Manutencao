@@ -24,6 +24,7 @@ export default function CreateRequisitionPage() {
     categoryId: '',
     description: '',
     priority: 'media' as RequisitionPriority,
+    requesterWhatsapp: currentUser?.phone ?? '',
   });
   const [error, setError] = useState('');
 
@@ -32,6 +33,7 @@ export default function CreateRequisitionPage() {
       ...form,
       requesterEmail: currentUser?.email ?? '',
       requesterPhone: currentUser?.phone ?? '',
+      requesterWhatsapp: form.requesterWhatsapp,
     }),
     onSuccess: () => {
       setError('');
@@ -98,6 +100,14 @@ export default function CreateRequisitionPage() {
               value={form.description}
               onChange={(event) => setForm({ ...form, description: event.target.value })}
               placeholder="Descreva o problema ou necessidade..."
+            />
+          </label>
+          <label>WhatsApp <span className="optional">(opcional)</span>
+            <input
+              type="tel"
+              value={form.requesterWhatsapp}
+              onChange={(event) => setForm({ ...form, requesterWhatsapp: event.target.value })}
+              placeholder="(00) 00000-0000"
             />
           </label>
           <label>Prioridade
