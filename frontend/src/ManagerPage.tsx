@@ -28,14 +28,16 @@ export default function ManagerPage() {
   const [filters, setFilters] = useState({ from: '', to: '', locationId: '', executorId: '', categoryId: '', priority: '', status: '' });
   const [appliedFilters, setAppliedFilters] = useState(filters);
 
+  const panelFilters = toDashboardFilters(appliedFilters);
+
   const requisitionsQuery = useQuery({
-    queryKey: ['requisitions', 'manager'],
-    queryFn: () => maintenanceService.requisitions(),
+    queryKey: ['requisitions', 'manager', appliedFilters],
+    queryFn: () => maintenanceService.requisitions(panelFilters),
   });
 
   const dashboardQuery = useQuery({
     queryKey: ['dashboard', 'manager', appliedFilters],
-    queryFn: () => maintenanceService.dashboard(toDashboardFilters(appliedFilters)),
+    queryFn: () => maintenanceService.dashboard(panelFilters),
   });
 
   const locationsQuery = useQuery({ queryKey: ['locations'], queryFn: maintenanceService.locations });
@@ -53,6 +55,7 @@ export default function ManagerPage() {
       setError('');
       setSelectedId(null);
       void queryClient.invalidateQueries({ queryKey: ['requisitions'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
     onError: (reason) => setError(apiErrorMessage(reason)),
   });
@@ -61,7 +64,6 @@ export default function ManagerPage() {
   const executors = executorsQuery.data ?? [];
   const unassigned = requisitions.filter((r: Requisition) => !r.executorId && r.status === 'aberta');
   const inProgress = requisitions.filter((r: Requisition) => r.executorId && r.status !== 'concluida' && r.status !== 'cancelada');
-  const completed = requisitions.filter((r: Requisition) => r.status === 'concluida' || r.status === 'cancelada');
   const metrics = dashboardQuery.data?.byStatus ?? {};
 
   const submitFilters = (event: React.FormEvent) => {
