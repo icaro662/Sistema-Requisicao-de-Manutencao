@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { unlink } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { Repository } from 'typeorm';
 import { uploadDirectory } from '../core/multer.config';
+import { hasAllowedImageContent } from '../core/utils/file-validation';
 import { UploadedFile } from '../models/uploaded-file.entity';
 
 @Injectable()
@@ -15,6 +16,12 @@ export class UploadService {
 
   async register(filename: string, userId: string): Promise<void> {
     const safeFilename = basename(filename);
+
+    if (!(await hasAllowedImageContent(join(uploadDirectory, safeFilename)))) {
+      await unlink(join(uploadDirectory, safeFilename)).catch(() => undefined);
+      throw new BadRequestException('O conteúdo do arquivo não é uma imagem permitida');
+    }
+
     const uploadedFile = this.uploadedFilesRepository.create({
       filename: safeFilename,
       ownerId: userId,
