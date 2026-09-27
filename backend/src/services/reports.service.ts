@@ -31,8 +31,13 @@ export class ReportsService {
       summary[requisition.status] = (summary[requisition.status] ?? 0) + 1;
       return summary;
     }, {});
+    const byPeriod = rows.reduce<Record<string, number>>((summary, requisition) => {
+      const period = requisition.createdAt.toISOString().slice(0, 7);
+      summary[period] = (summary[period] ?? 0) + 1;
+      return summary;
+    }, {});
 
-    return { generatedAt: new Date(), total: rows.length, rows, byStatus };
+    return { generatedAt: new Date(), total: rows.length, rows, byStatus, byPeriod };
   }
 
   async exportPdf(filters: FilterReportDto): Promise<Buffer> {

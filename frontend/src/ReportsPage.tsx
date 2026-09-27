@@ -110,6 +110,17 @@ export default function ReportsPage() {
       {statusOptions.slice(0, 3).map(([status, label]) => <div className="metric-card" key={status}><div><span>{label}</span><strong>{report.data?.byStatus?.[status] ?? 0}</strong></div></div>)}
     </section>
 
+    <section className="report-charts-grid">
+      <article className="panel report-chart-panel">
+        <div className="panel-heading"><div><p className="eyebrow">Distribuição</p><h2>Por status</h2></div></div>
+        <div className="report-bars">{statusOptions.map(([status, label]) => { const value = report.data?.byStatus?.[status] ?? 0; const maximum = Math.max(...Object.values(report.data?.byStatus ?? { total: 1 }), 1); return <div className="report-bar-row" key={status}><span>{label}</span><div className="report-bar-track"><div className={`report-bar ${status}`} style={{ width: `${(value / maximum) * 100}%` }} /></div><strong>{value}</strong></div>; })}</div>
+      </article>
+      <article className="panel report-chart-panel">
+        <div className="panel-heading"><div><p className="eyebrow">Evolução</p><h2>Por período</h2></div></div>
+        <div className="report-bars">{Object.entries(report.data?.byPeriod ?? {}).length ? Object.entries(report.data?.byPeriod ?? {}).map(([period, value]) => { const maximum = Math.max(...Object.values(report.data?.byPeriod ?? { total: 1 }), 1); return <div className="report-bar-row" key={period}><span>{period}</span><div className="report-bar-track"><div className="report-bar period" style={{ width: `${(value / maximum) * 100}%` }} /></div><strong>{value}</strong></div>; }) : <div className="empty-state compact-empty">Nenhum período encontrado.</div>}</div>
+      </article>
+    </section>
+
     <section className="panel table-panel">
       <div className="panel-heading"><div><p className="eyebrow">Resultado</p><h2>Requisições encontradas</h2></div><div className="report-export-actions">{report.isFetching && <RefreshCw className="spin" size={18} />}<button className="secondary-button compact" disabled={Boolean(exporting) || !report.data?.total} onClick={() => void exportReport('pdf')}><Download size={15} />{exporting === 'pdf' ? 'Gerando...' : 'PDF'}</button><button className="secondary-button compact" disabled={Boolean(exporting) || !report.data?.total} onClick={() => void exportReport('excel')}><Download size={15} />{exporting === 'excel' ? 'Gerando...' : 'Excel'}</button></div></div>
       {!report.data?.rows.length ? <div className="empty-state"><BarChart3 size={23} /><strong>Nenhum resultado encontrado</strong><span>Ajuste os filtros para consultar outras requisições.</span></div> : <div className="table-wrap"><table><thead><tr><th>Número</th><th>Descrição</th><th>Prioridade</th><th>Status</th><th>Data</th></tr></thead><tbody>{report.data.rows.map((row) => <tr key={row.id}><td>{row.number}</td><td>{row.description}</td><td><span className={`priority ${row.priority}`}>{row.priority}</span></td><td><span className={`status-badge ${row.status}`}>{row.status ? statusLabels[row.status] : '—'}</span></td><td>{row.createdAt ? new Date(row.createdAt).toLocaleDateString('pt-BR') : '—'}</td></tr>)}</tbody></table></div>}

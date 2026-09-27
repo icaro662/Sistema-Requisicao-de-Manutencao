@@ -5,9 +5,9 @@ import { ReportsService } from '../src/services/reports.service';
 describe('ReportsService', () => {
   it('applies report filters and summarizes results by status', async () => {
     const rows = [
-      { status: RequisitionStatus.OPEN },
-      { status: RequisitionStatus.COMPLETED },
-      { status: RequisitionStatus.OPEN },
+      { status: RequisitionStatus.OPEN, createdAt: new Date('2026-01-05') },
+      { status: RequisitionStatus.COMPLETED, createdAt: new Date('2026-01-15') },
+      { status: RequisitionStatus.OPEN, createdAt: new Date('2026-02-01') },
     ];
     const queryBuilder = {
       andWhere: jest.fn().mockReturnThis(),
@@ -30,6 +30,7 @@ describe('ReportsService', () => {
     expect(queryBuilder.andWhere).toHaveBeenCalledTimes(7);
     expect(report.total).toBe(3);
     expect(report.byStatus).toEqual({ aberta: 2, concluida: 1 });
+    expect(report.byPeriod).toEqual({ '2026-01': 2, '2026-02': 1 });
 
     const pdf = await service.exportPdf({ status: RequisitionStatus.OPEN });
     const excel = await service.exportExcel({ status: RequisitionStatus.OPEN });
