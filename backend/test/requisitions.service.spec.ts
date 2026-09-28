@@ -18,7 +18,9 @@ describe('RequisitionsService', () => {
   };
   const locationsRepository = { findOne: jest.fn() };
   const categoriesRepository = { findOne: jest.fn() };
+  const usersRepository = { findOne: jest.fn() };
   const historyService = { record: jest.fn(), describeUser: jest.fn() };
+  const notificationsService = { notifyManager: jest.fn() };
   let service: RequisitionsService;
 
   beforeEach(() => {
@@ -28,12 +30,15 @@ describe('RequisitionsService', () => {
     queryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
     historyService.record.mockResolvedValue(null);
     historyService.describeUser.mockResolvedValue('Ana Executor');
+    notificationsService.notifyManager.mockResolvedValue([]);
     requisitionsRepository.createQueryBuilder.mockReturnValue(queryBuilder);
     service = new RequisitionsService(
       requisitionsRepository as never,
       locationsRepository as never,
       categoriesRepository as never,
+      usersRepository as never,
       historyService as never,
+      notificationsService as never,
     );
   });
 
@@ -200,5 +205,126 @@ describe('RequisitionsService', () => {
       previousStatus: RequisitionStatus.IN_SERVICE,
       newStatus: RequisitionStatus.CANCELLED,
     }));
+  });
+
+  it('notifies the manager automatically when the status changes', async () => {
+    const requisition = { executorId: 'executor-id', status: RequisitionStatus.OPEN, number: 'REQ-00001' };
+    requisitionsRepository.findOne.mockResolvedValue(requisition);
+    requisitionsRepository.save.mockResolvedValue(requisition);
+
+    await service.updateStatus('requisition-id', { status: RequisitionStatus.IN_SERVICE }, UserRole.EXECUTOR, 'executor-id');
+
+    expect(notificationsService.notifyManager).toHaveBeenCalledWith(requisition, {
+      event: 'Status atualizado',
+      previousStatus: RequisitionStatus.OPEN,
+      actorId: 'executor-id',
+    });
+  });
+
+  it('does not notify when the status stays the same', async () => {
+    const requisition = { executorId: 'executor-id', status: RequisitionStatus.OPEN };
+    requisitionsRepository.findOne.mockResolvedValue(requisition);
+    requisitionsRepository.save.mockResolvedValue(requisition);
+
+    await service.updateStatus('requisition-id', { status: RequisitionStatus.OPEN }, UserRole.EXECUTOR, 'executor-id');
+
+    expect(notificationsService.notifyManager).not.toHaveBeenCalled();
+  });
+
+  it('stores the gestor of a new requisition and notifies them', async () => {
+    locationsRepository.findOne.mockResolvedValue({ id: 'location-id' });
+    categoriesRepository.findOne.mockResolvedValue({ id: 'category-id' });
+    usersRepository.findOne.mockResolvedValue({ id: 'gestor-id', role: UserRole.MANAGER });
+    requisitionsRepository.count.mockResolvedValue(0);
+    requisitionsRepository.create.mockImplementation((value) => value);
+    requisitionsRepository.save.mockImplementation((value) => Promise.resolve(value));
+
+    const saved = await service.create({
+      locationId: 'location-id',
+      categoryId: 'category-id',
+      description: 'Torneira com vazamento',
+      priority: RequisitionPriority.MEDIUM,
+      requesterEmail: 'user@example.com',
+      requesterPhone: '',
+      gestorId: 'gestor-id',
+    }, 'requester-id', 'User');
+
+    expect(saved.gestorId).toBe('gestor-id');
+    expect(notificationsService.notifyManager).toHaveBeenCalledWith(saved, {
+      event: 'Nova requisição',
+      actorId: 'requester-id',
+    });
+  });
+
+  it('rejects a gestor that does not exist', async () => {
+    locationsRepository.findOne.mockResolvedValue({ id: 'location-id' });
+    categoriesRepository.findOne.mockResolvedValue({ id: 'category-id' });
+    usersRepository.findOne.mockResolvedValue(null);
+
+    await expect(service.create({
+      locationId: 'location-id',
+      categoryId: 'category-id',
+      description: 'Torneira com vazamento',
+      priority: RequisitionPriority.MEDIUM,
+      requesterEmail: 'user@example.com',
+      requesterPhone: '',
+      gestorId: 'unknown-id',
+    }, 'requester-id', 'User')).rejects.toThrow('Gestor não encontrado');
+
+    expect(requisitionsRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('rejects a gestor without the manager profile', async () => {
+    locationsRepository.findOne.mockResolvedValue({ id: 'location-id' });
+    categoriesRepository.findOne.mockResolvedValue({ id: 'category-id' });
+    usersRepository.findOne.mockResolvedValue({ id: 'executor-id', role: UserRole.EXECUTOR });
+
+    await expect(service.create({
+      locationId: 'location-id',
+      categoryId: 'category-id',
+      description: 'Torneira com vazamento',
+      priority: RequisitionPriority.MEDIUM,
+      requesterEmail: 'user@example.com',
+      requesterPhone: '',
+      gestorId: 'executor-id',
+    }, 'requester-id', 'User')).rejects.toThrow('não tem perfil de gestor');
+  });
+
+  it('sends a manual notification to the gestor of the requisition', async () => {
+    const requisition = { requesterId: 'requester-id', executorId: 'executor-id', gestorId: 'gestor-id' };
+    requisitionsRepository.findOne.mockResolvedValue(requisition);
+    notificationsService.notifyManager.mockResolvedValue([{ id: 'notification-id' }]);
+
+    const notification = await service.notifyManager(
+      'requisition-id',
+      { mensagem: 'Aguardando retorno do gestor' },
+      UserRole.EXECUTOR,
+      'executor-id',
+    );
+
+    expect(notification).toEqual({ id: 'notification-id' });
+    expect(notificationsService.notifyManager).toHaveBeenCalledWith(requisition, {
+      event: 'Notificação ao gestor',
+      actorId: 'executor-id',
+      message: 'Aguardando retorno do gestor',
+      skipActor: false,
+    });
+  });
+
+  it('rejects a manual notification when there is no gestor to receive it', async () => {
+    requisitionsRepository.findOne.mockResolvedValue({ requesterId: 'requester-id', executorId: 'executor-id' });
+    notificationsService.notifyManager.mockResolvedValue([]);
+
+    await expect(service.notifyManager('requisition-id', {}, UserRole.EXECUTOR, 'executor-id'))
+      .rejects.toThrow('Nenhum gestor disponível');
+  });
+
+  it('hides another requester\'s requisition from the manual notification', async () => {
+    requisitionsRepository.findOne.mockResolvedValue({ requesterId: 'owner-id', executorId: null });
+
+    await expect(service.notifyManager('requisition-id', {}, UserRole.REQUESTER, 'other-id'))
+      .rejects.toThrow('Requisição não encontrada');
+
+    expect(notificationsService.notifyManager).not.toHaveBeenCalled();
   });
 });

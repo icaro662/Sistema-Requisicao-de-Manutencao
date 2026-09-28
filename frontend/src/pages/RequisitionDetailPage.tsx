@@ -30,6 +30,11 @@ export default function RequisitionDetail() {
     enabled: Boolean(id),
   });
 
+  const gestoresQuery = useQuery({
+    queryKey: ['gestores'],
+    queryFn: maintenanceService.gestores,
+  });
+
   const mutation = useMutation({
     mutationFn: (status: RequisitionStatus) => maintenanceService.updateStatus(id, status),
     onSuccess: () => {
@@ -40,6 +45,9 @@ export default function RequisitionDetail() {
   });
 
   const requisition = query.data;
+  const gestorName = requisition?.gestorId
+    ? gestoresQuery.data?.find((gestor) => gestor.id === requisition.gestorId)?.name ?? requisition.gestorId
+    : undefined;
   const executions = executionsQuery.data ?? [];
   const afterPhoto = executions.find((record) => Boolean(record.photoUrl))?.photoUrl;
 
@@ -71,6 +79,7 @@ export default function RequisitionDetail() {
               <div><dt>Telefone</dt><dd>{requisition.requesterPhone ?? 'Não informado'}</dd></div>
               <div><dt>Local</dt><dd>{requisition.locationId ?? 'Não atribuído'}</dd></div>
               <div><dt>Categoria</dt><dd>{requisition.categoryId ?? 'Não atribuída'}</dd></div>
+              <div><dt>Gestor</dt><dd>{gestorName ?? 'Não definido'}</dd></div>
             </dl>
             <BeforeAfterPhotos beforeUrl={requisition.photoUrl} afterUrl={afterPhoto} />
           </section>

@@ -24,6 +24,7 @@ export interface Requisition {
   locationId?: string;
   categoryId?: string;
   executorId?: string;
+  gestorId?: string;
   executionDescription?: string;
   executionDate?: string;
   materialsUsed?: string;
@@ -47,9 +48,25 @@ export interface RequisitionQuery {
 }
 export interface LoginInput { email: string; password: string }
 export interface RegisterInput { name: string; email: string; password: string; phone?: string }
-export interface CreateRequisitionInput { locationId: string; categoryId: string; description: string; priority: RequisitionPriority; requesterEmail: string; requesterPhone: string; requesterWhatsapp?: string; photoUrl?: string }
+export interface CreateRequisitionInput { locationId: string; categoryId: string; description: string; priority: RequisitionPriority; requesterEmail: string; requesterPhone: string; requesterWhatsapp?: string; photoUrl?: string; gestorId?: string }
 export interface RegisterExecutionInput { executionDescription: string; materialsUsed?: string; observations?: string }
 export interface Notification { id: string; message: string; requisitionId: string; requisitionNumber: string; status: RequisitionStatus; createdAt: string; read: boolean }
+export type CommunicationChannel = 'aplicacao' | 'email';
+export type CommunicationOutcome = 'enviado' | 'falha' | 'desativado';
+export interface Communication {
+  id: string;
+  requisitionId?: string | null;
+  requisitionNumber?: string | null;
+  recipientId?: string | null;
+  recipientName: string;
+  recipientEmail?: string | null;
+  channel: CommunicationChannel;
+  subject: string;
+  body: string;
+  outcome: CommunicationOutcome;
+  detail?: string | null;
+  createdAt: string;
+}
 export interface ExecutionRecord {
   id: string;
   requisitionId: string;

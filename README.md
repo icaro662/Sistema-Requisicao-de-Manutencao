@@ -126,9 +126,6 @@ MAIL_PASSWORD=your-app-password
 MAIL_FROM=noreply@maintenance.com
 FRONTEND_URL=http://localhost:5173
 ```
-
-> **Nota:** `DB_SYNCHRONIZE=true` cria/atualiza as tabelas automaticamente em desenvolvimento. Em produção, defina como `false` e use migrations.
-
 ### 4. Criar o banco de dados
 
 ```sql
@@ -151,6 +148,8 @@ O seed é **idempotente** — registros existentes são ignorados, então pode s
 | **Locais** | 12 locais (Salas 101–301, Andar 1–2, Térreo, Subsolo, Cozinha, Banheiros) |
 | **Categorias** | 10 categorias de manutenção (Elétrica, Hidráulica, Mobiliário, Eletrônicos, Ar-condicionado, Pintura, Estrutural, Limpeza, Jardinagem, Segurança) |
 
+**Credenciais do administrador:**
+
 ### 5.1 Seed de desenvolvimento (dados de demonstração)
 
 ```bash
@@ -166,6 +165,8 @@ Também é **idempotente** (registros já existentes são ignorados) e popula o 
 | **12 requisições** | Abertas por solicitantes diferentes e atribuídas a executores diferentes, cobrindo todos os status: `aberta`, `em_analise`, `em_atendimento`, `aguardando_material`, `concluida` e `cancelada` |
 | **Linha do tempo** | Histórico de cada requisição (criação, atribuição, mudanças de status, execução e cancelamento), com data e responsável |
 | **Execuções e materiais** | Registros de execução das requisições concluídas e uma solicitação de material pendente |
+
+As requisições de demonstração são reconhecidas pela descrição e a numeração segue a mesma regra da API (total de requisições + 1), então rodar o seed não quebra a sequência `REQ-0000X`.
 
 ### 6. Executar
 
@@ -221,6 +222,104 @@ npm run preview
 O frontend ficará disponível em `http://localhost:5173`.
 
 ---
+
+## Executando o projeto completo
+
+1. **MySQL** — certifique-se de que o banco está rodando e acessível.
+2. **Backend** — em um terminal: `cd backend && npm run start:dev`
+3. **Frontend** — em outro terminal: `cd frontend && npm run dev`
+4. **Acessar** — abra `http://localhost:5173` no navegador.
+5. **Login** — use `admin@empresa.com` / `Admin@123` (se executou o seed).
+
+## Configuração do backend
+
+Entre na pasta do backend e instale as dependências:
+
+```bash
+cd backend
+npm install
+```
+
+Crie o arquivo de ambiente a partir do exemplo:
+
+```bash
+cp src/config/.env.example src/config/.env
+```
+
+No Windows PowerShell, use:
+
+```powershell
+Copy-Item src/config/.env.example src/config/.env
+```
+
+Ajuste as credenciais do MySQL em `backend/src/config/.env`:
+
+```env
+NODE_ENV=development
+PORT=3000
+JWT_SECRET=change-me
+JWT_EXPIRES_IN=24h
+DB_HOST=localhost
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD=
+DB_NAME=maintenance_system
+DB_SYNCHRONIZE=true
+```
+
+Crie o banco antes de iniciar a API:
+
+```sql
+CREATE DATABASE maintenance_system;
+```
+
+## Configuração do frontend
+
+Em outro terminal, entre na pasta do frontend e instale as dependências:
+
+```bash
+cd frontend
+npm install
+```
+
+O frontend já usa o proxy do Vite para encaminhar `/api` para `http://localhost:3000`. Essa é a configuração recomendada para desenvolvimento local.
+
+Se precisar apontar diretamente para outro endereço da API, copie o arquivo de exemplo:
+
+```bash
+cp .env.example .env
+```
+
+Defina a URL desejada:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+```
+
+## Executar localmente
+
+### 1. Iniciar a API
+
+No diretório `backend/`:
+
+```bash
+npm run start:dev
+```
+
+A API ficará disponível em:
+
+- Base da API: `http://localhost:3000/api`
+- Health check: `GET http://localhost:3000/api/health`
+
+### 2. Iniciar o painel web
+
+No diretório `frontend/`:
+
+```bash
+npm run dev
+```
+
+O frontend ficará disponível em `http://localhost:5173`.
 
 ## Comandos úteis
 
@@ -279,6 +378,11 @@ O frontend está conectado aos endpoints atualmente implementados para:
 - histórico de alterações das requisições (quem, o quê e quando) com linha do tempo visual;
 - log de auditoria do sistema (quem, o quê, quando e resultado) com filtros por usuário, data, ação, objeto e resultado;
 - visualização do histórico completo de uma requisição a partir da auditoria;
+- campo de gestor responsável na requisição (definido na criação e editável), com lista de gestores em `GET /gestores`;
+- notificações automáticas ao gestor quando a requisição é criada, muda de status, recebe executor, registra execução, é concluída ou encerrada;
+- envio manual de notificação ao gestor pelo executor/solicitante (`POST /requisicoes/:id/notificar-gestor`);
+- e-mail com o resumo das alterações (Status, Executor, Local e nº da requisição);
+- tela de notificações do gestor com o histórico de comunicações enviadas (canal, destinatário e resultado);
 - registro de execução pelo executor (descrição, materiais, observações e foto);
 - finalização e encerramento de requisições;
 - visualização das fotos registradas antes e depois da manutenção;
@@ -307,6 +411,56 @@ O que é auditado:
 - locais e categorias: criação, atualização e exclusão;
 - operações com erro: o filtro global de exceções registra `Falha em <MÉTODO> <rota> (HTTP <status>): <mensagem>` com `resultado = falha` nas requisições autenticadas.
 
+Login e logout ficam de fora da auditoria: abrir e encerrar sessão não é uma operação sobre o negócio, e uma falha de login não tem "quem" autenticado a registrar.
+
+Endpoint (somente administrador):
+
+```bash
+GET /api/auditoria?usuario=&acao=&entidade=&resultado=&de=&ate=&requisicaoId=&page=1&limit=10
+```
+
+A resposta é `{ data, total, page, limit }`. Os filtros são opcionais; `de`/`ate` aceitam `YYYY-MM-DD` e um intervalo invertido retorna `400`. Sem `limit` a API responde 10 registros por página (teto de 100).
+
+A tela **Auditoria** (menu lateral, perfil administrador, rota `/auditoria`) aplica esses filtros, mostra Quando, Quem, Operação, Objeto e Resultado, pagina os registros em **10 por página** e abre o histórico completo da requisição ligada ao evento em um painel com a linha do tempo.
+
+Em desenvolvimento a tabela é sincronizada pelo TypeORM; em bancos já existentes a migration `1710000000002-AuditLogColumns` torna `requisicao_id` opcional e adiciona as colunas de auditoria e os índices de consulta.
+
+## Notificações e comunicações
+
+A requisição tem um **gestor responsável** (`requisicoes.gestor_id`), definido no formulário de criação e alterável na edição (`PATCH /requisicoes/:id`, `gestorId: null` remove). Ele é o destinatário das notificações; a lista de gestores ativos vem de:
+
+```bash
+GET /api/gestores          # qualquer usuário autenticado
+```
+
+O que gera notificação para o gestor:
+
+- criação da requisição;
+- alteração de status;
+- atribuição de executor (inclusive "assumir");
+- registro de execução, finalização e encerramento;
+- notificação manual enviada pelo executor/solicitante/gestor.
+
+Sem gestor definido, a notificação vai para toda a equipe de gestão ativa. O autor do próprio evento não é notificado (na notificação manual, ele também pode ser o destinatário).
+
+**Template.** `backend/src/core/templates/notification.template.ts` monta a mensagem com **Status, Executor, Local e Nº da requisição** e o resumo das alterações (de → para, responsável, data e observação). O mesmo conteúdo vira o texto no aplicativo e o corpo do e-mail.
+
+**E-mail.** O envio usa o `EmailProvider` (`nodemailer`) configurado por `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD` e `MAIL_FROM`. Com `MAIL_ENABLED=false` o envio não acontece e o registro fica com resultado `desativado`. Falhas de SMTP nunca interrompem a operação: o resultado (`enviado`, `falha` ou `desativado`) é apenas registrado.
+
+**Endpoints**
+
+```bash
+GET  /api/notificacoes                 # notificações do usuário (gestor: as endereçadas a ele)
+POST /api/requisicoes/:id/notificar-gestor   # corpo { "mensagem": "texto opcional" }
+GET  /api/comunicacoes                 # histórico de comunicações (gestor/admin)
+```
+
+`POST /requisicoes/:id/notificar-gestor` respeita a posse da requisição: o solicitante só avisa da própria requisição e o executor só da que está atribuído a ele (`404` caso contrário). Sem destinatário disponível a resposta é `400`.
+
+**Telas.** O menu **Notificações** (perfil gestor, rota `/notificacoes`) mostra a caixa de entrada com as notificações recebidas (clique abre a requisição, "marcar todas como lidas" limpa o contador do sino) e a tabela **Histórico de comunicações enviadas** com data, canal (`aplicacao`/`email`), destinatário, assunto, resultado e nº da requisição. O executor envia notificações pelo painel da requisição (bloco **Notificar gestor**).
+
+Em desenvolvimento o TypeORM cria as tabelas `notificacoes` e `comunicacoes`; em bancos já existentes a migration `1710000000003-GestorNotifications` adiciona `requisicoes.gestor_id` e as duas tabelas.
+
 ## Arquitetura do backend
 
 O fluxo principal de uma requisição segue estas camadas:
@@ -334,8 +488,10 @@ As principais tabelas atuais usam nomes físicos em português no MySQL:
 - `usuarios`: usuários, perfis, credenciais e controle de versão da sessão;
 - `locais`: locais de atendimento;
 - `categorias`: categorias de manutenção;
-- `requisicoes`: requisições, status, prioridade e dados de execução;
+- `requisicoes`: requisições, status, prioridade, gestor responsável (`gestor_id`) e dados de execução;
 - `historico_alteracoes`: log de auditoria do sistema (quem, o quê, quando e resultado), com o objeto auditado (`entidade`/`entidade_id`) e a ligação opcional com a requisição (`requisicao_id`);
+- `notificacoes`: notificações endereçadas ao gestor (destinatário, mensagem, status e quando foi criada);
+- `comunicacoes`: histórico do que foi enviado (canal aplicativo/e-mail, destinatário, assunto, conteúdo e resultado do envio);
 - `registros_execucao`: registros de execução salvos pelo executor;
 - `materiais_solicitacao`: materiais solicitados durante o atendimento.
 

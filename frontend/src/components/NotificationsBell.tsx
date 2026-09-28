@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Bell, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import { maintenanceService } from '../services/maintenanceService';
 import { useAuthStore } from '../store/authStore';
+import { loadReadIds, persistReadIds } from '../utils/notificationRead';
 import { statusLabels } from '../utils/status';
 import type { Notification, RequisitionStatus } from '../types';
 
@@ -15,32 +16,6 @@ const statusIcons: Record<RequisitionStatus, React.ReactNode> = {
   concluida: <CheckCircle size={16} />,
   cancelada: <AlertCircle size={16} />,
 };
-
-const STORAGE_PREFIX = 'manutencao:notificacoes-lidas:';
-const MAX_STORED_IDS = 300;
-
-function storageKey(userId?: string) {
-  return `${STORAGE_PREFIX}${userId ?? 'anonimo'}`;
-}
-
-function loadReadIds(userId?: string): string[] {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey(userId)) ?? '[]');
-    return Array.isArray(parsed)
-      ? parsed.filter((id): id is string => typeof id === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function persistReadIds(userId: string | undefined, ids: string[]) {
-  try {
-    localStorage.setItem(storageKey(userId), JSON.stringify(ids.slice(-MAX_STORED_IDS)));
-  } catch {
-    // Storage unavailable (private browsing): the badge just resets on reload.
-  }
-}
 
 function formatNotificationDate(value: string) {
   const date = new Date(value);

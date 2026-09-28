@@ -21,10 +21,12 @@ export default function CreateRequisitionPage() {
   const { showToast } = useToast();
   const locationsQuery = useQuery({ queryKey: ['locations'], queryFn: maintenanceService.locations });
   const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: maintenanceService.categories });
+  const gestoresQuery = useQuery({ queryKey: ['gestores'], queryFn: maintenanceService.gestores });
 
   const [form, setForm] = useState({
     locationId: '',
     categoryId: '',
+    gestorId: '',
     description: '',
     priority: 'media' as RequisitionPriority,
     requesterWhatsapp: currentUser?.phone ?? '',
@@ -38,6 +40,7 @@ export default function CreateRequisitionPage() {
       try {
         return await maintenanceService.createRequisition({
           ...form,
+          gestorId: form.gestorId || undefined,
           requesterEmail: currentUser?.email ?? '',
           requesterPhone: currentUser?.phone ?? '',
           requesterWhatsapp: form.requesterWhatsapp,
@@ -110,6 +113,18 @@ export default function CreateRequisitionPage() {
               ))}
             </select>
             {fieldErrors.categoryId && <span className="field-error">{fieldErrors.categoryId}</span>}
+          </label>
+          <label>Gestor responsável <span className="optional">(opcional)</span>
+            <select
+              value={form.gestorId}
+              onChange={(event) => setForm({ ...form, gestorId: event.target.value })}
+            >
+              <option value="">Sem gestor definido</option>
+              {gestoresQuery.data?.map((gestor) => (
+                <option key={gestor.id} value={gestor.id}>{gestor.name}</option>
+              ))}
+            </select>
+            <span className="field-hint">É para este gestor que as notificações da requisição são enviadas.</span>
           </label>
           <label>Descrição
             <textarea

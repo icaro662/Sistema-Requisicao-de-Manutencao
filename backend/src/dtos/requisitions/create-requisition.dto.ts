@@ -36,4 +36,9 @@ export class CreateRequisitionDto {
 	@IsString()
 	@MaxLength(255)
 	photoUrl?: string;
+
+	/** Gestor responsável (recebe as notificações da requisição). */
+	@IsOptional()
+	@IsUUID()
+	gestorId?: string;
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Camera, ClipboardList, History, UserCheck, Wrench } from 'lucide-react';
+import { ArrowLeft, Camera, ClipboardList, History, Send, UserCheck, Wrench } from 'lucide-react';
 import { apiErrorMessage } from '../services/api';
 import { maintenanceService } from '../services/maintenanceService';
 import { useAuthStore } from '../store/authStore';
@@ -27,6 +27,7 @@ export default function ExecutorRequisitionDetailPage() {
   const { showToast } = useToast();
   const [error, setError] = useState('');
   const [newMaterial, setNewMaterial] = useState({ materialsNeeded: '', reason: '' });
+  const [notifyMessage, setNotifyMessage] = useState('');
 
   const requisitionQuery = useQuery({
     queryKey: ['requisition', id],
@@ -100,6 +101,21 @@ export default function ExecutorRequisitionDetailPage() {
       setNewMaterial({ materialsNeeded: '', reason: '' });
       showToast('Material adicionado com sucesso!', 'success');
       void queryClient.invalidateQueries({ queryKey: ['materials', id] });
+    },
+    onError: (reason) => showToast(apiErrorMessage(reason)),
+  });
+
+  const notifyGestorMutation = useMutation({
+    mutationFn: () => maintenanceService.notifyGestor(
+      id,
+      notifyMessage.trim() ? { mensagem: notifyMessage.trim() } : {},
+    ),
+    onSuccess: () => {
+      setNotifyMessage('');
+      setError('');
+      showToast('Gestor notificado com sucesso!', 'success');
+      void queryClient.invalidateQueries({ queryKey: ['communications'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
     onError: (reason) => showToast(apiErrorMessage(reason)),
   });
@@ -285,6 +301,33 @@ export default function ExecutorRequisitionDetailPage() {
               {executeMutation.isPending ? 'Salvando...' : 'Concluir solicitação'}
             </button>
           </form>
+        )}
+
+        {isAssignedToMe && !isCompleted && (
+          <div className="notify-gestor-block">
+            <p className="eyebrow">Retorno</p>
+            <h3>Notificar gestor</h3>
+            <p className="muted">
+              Envia ao gestor uma notificação no sistema e um e-mail com Status, Executor, Local e nº da requisição.
+            </p>
+            <form
+              className="admin-form"
+              onSubmit={(event) => { event.preventDefault(); notifyGestorMutation.mutate(); }}
+            >
+              <label>Mensagem ao gestor <span className="optional">(opcional)</span>
+                <textarea
+                  rows={2}
+                  maxLength={500}
+                  value={notifyMessage}
+                  onChange={(event) => setNotifyMessage(event.target.value)}
+                  placeholder="Ex: Material liberado, iniciando o serviço."
+                />
+              </label>
+              <button className="secondary-button" disabled={notifyGestorMutation.isPending}>
+                <Send size={15} /> {notifyGestorMutation.isPending ? 'Enviando...' : 'Notificar gestor'}
+              </button>
+            </form>
+          </div>
         )}
 
         {isCompleted && (

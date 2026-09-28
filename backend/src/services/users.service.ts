@@ -113,6 +113,16 @@ export class UsersService {
     return { data: users.map(({ password: _password, ...user }) => user), total };
   }
 
+  /** Gestores ativos — usados para escolher o gestor de uma requisição. */
+  async findManagers(): Promise<Omit<User, 'password'>[]> {
+    const users = await this.usersRepository.find({
+      where: { role: UserRole.MANAGER, isActive: true },
+      order: { name: 'ASC' },
+    });
+
+    return users.map(({ password: _password, ...user }) => user);
+  }
+
   async findOne(id: string): Promise<Omit<User, 'password'>> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
