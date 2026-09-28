@@ -4,8 +4,10 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { JwtGuard } from '../core/guards/jwt.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { RequisitionsService } from '../services/requisitions.service';
+import { CancelRequisitionDto } from '../dtos/requisitions/cancel-requisition.dto';
 import { CreateRequisitionDto } from '../dtos/requisitions/create-requisition.dto';
 import { FilterRequisitionDto } from '../dtos/requisitions/filter-requisition.dto';
+import { FinalizeRequisitionDto } from '../dtos/requisitions/finalize-requisition.dto';
 import { RegisterExecutionDto } from '../dtos/requisitions/register-execution.dto';
 import { UpdateRequisitionDto } from '../dtos/requisitions/update-requisition.dto';
 import { UpdateStatusDto } from '../dtos/requisitions/update-status.dto';
@@ -49,18 +51,30 @@ export class RequisitionsController {
   @Post(':id/atribuir')
   @Roles(UserRole.MANAGER, UserRole.ADMIN)
   assignExecutor(@Param('id') id: string, @Body() dto: AtribuirExecutorDto, @CurrentUser() _user: RequestUser) {
-    return this.requisitionsService.assignExecutor(id, dto.executorId, _user.role);
+    return this.requisitionsService.assignExecutor(id, dto.executorId, _user.role, _user.id);
   }
 
   @Post(':id/assumir')
   @Roles(UserRole.EXECUTOR)
   selfAssign(@Param('id') id: string, @CurrentUser() user: RequestUser) {
-    return this.requisitionsService.assignExecutor(id, user.id, 'executor');
+    return this.requisitionsService.assignExecutor(id, user.id, user.role, user.id);
   }
 
   @Post(':id/execucao')
   @Roles(UserRole.EXECUTOR)
   registerExecution(@Param('id') id: string, @Body() dto: RegisterExecutionDto, @CurrentUser() user: RequestUser) {
     return this.requisitionsService.registerExecution(id, dto, user.id);
+  }
+
+  @Post(':id/finalizar')
+  @Roles(UserRole.EXECUTOR, UserRole.MANAGER, UserRole.ADMIN)
+  finalize(@Param('id') id: string, @Body() dto: FinalizeRequisitionDto, @CurrentUser() user: RequestUser) {
+    return this.requisitionsService.finalize(id, dto, user.role, user.id);
+  }
+
+  @Post(':id/cancelar')
+  @Roles(UserRole.EXECUTOR, UserRole.MANAGER, UserRole.ADMIN)
+  cancel(@Param('id') id: string, @Body() dto: CancelRequisitionDto, @CurrentUser() user: RequestUser) {
+    return this.requisitionsService.cancel(id, dto, user.role, user.id);
   }
 }

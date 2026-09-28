@@ -2,6 +2,7 @@ import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, Pri
 import { ExecutionRecord } from './execution-record.entity';
 import { RequisitionPriority } from '../core/enums/priority.enum';
 import { RequisitionStatus } from '../core/enums/status.enum';
+import { RequisitionHistory } from './history.entity';
 import { RequestMaterial } from './request-material.entity';
 
 @Entity('requisicoes')
@@ -62,6 +63,9 @@ export class Requisition {
 
   @OneToMany(() => ExecutionRecord, (record) => record.requisition)
   executionRecords: ExecutionRecord[];
+
+  @OneToMany(() => RequisitionHistory, (history) => history.requisition)
+  history: RequisitionHistory[];
 
   @CreateDateColumn({ name: 'criado_em' })
   createdAt: Date;

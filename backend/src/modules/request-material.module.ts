@@ -4,9 +4,10 @@ import { RequestMaterial } from '../models/request-material.entity';
 import { Requisition } from '../models/requisition.entity';
 import { RequestMaterialController } from '../controllers/request-material.controller';
 import { RequestMaterialService } from '../services/request-material.service';
+import { HistoryModule } from './history.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RequestMaterial, Requisition])],
+  imports: [TypeOrmModule.forFeature([RequestMaterial, Requisition]), HistoryModule],
   controllers: [RequestMaterialController],
   providers: [RequestMaterialService],
   exports: [RequestMaterialService],

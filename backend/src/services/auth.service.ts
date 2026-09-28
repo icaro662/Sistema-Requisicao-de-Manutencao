@@ -9,9 +9,11 @@ import { RefreshTokenDto } from '../dtos/auth/refresh-token.dto';
 import { ForgotPasswordDto } from '../dtos/auth/forgot-password.dto';
 import { ResetPasswordDto } from '../dtos/auth/reset-password.dto';
 import { User } from '../models/user.entity';
+import { AuditEntity, HistoryAction } from '../models/history.entity';
 import { EmailProvider } from '../core/providers/email.provider';
 import { passwordResetEmailTemplate } from '../core/templates/email.template';
 import { UsersService } from './users.service';
+import { HistoryService } from './history.service';
 
 export interface AuthResponse {
   message: string;
@@ -39,6 +41,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly emailProvider: EmailProvider,
     private readonly config: ConfigService,
+    private readonly historyService: HistoryService,
   ) {
     this.jwtSecret = config.get<string>('JWT_SECRET', 'change-me');
     this.refreshTokenTtl = config.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as import('jsonwebtoken').SignOptions['expiresIn'];
@@ -50,6 +53,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Login e logout ficam fora da auditoria: a sessão não é uma operação
+    // sobre o negócio. Falhas de login também não têm "Quem" autenticado.
     return this.issueTokens(user, 'Login successful');
   }
 
@@ -139,6 +144,14 @@ export class AuthService {
     user.passwordResetExpires = null;
     user.tokenVersion += 1; // Invalidate all existing sessions
     await this.usersService.saveUser(user);
+
+    await this.historyService.record({
+      entityType: AuditEntity.USER,
+      entityId: user.id,
+      userId: user.id,
+      action: HistoryAction.PASSWORD_RESET,
+      description: `Senha redefinida pelo próprio usuário ${user.name} (${user.email})`,
+    });
 
     return { message: 'Senha redefinida com sucesso' };
   }
