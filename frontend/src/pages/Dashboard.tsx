@@ -47,14 +47,6 @@ export default function Dashboard() {
           </button>
         }
       />
-      <div className="hero-strip">
-        <div>
-          <span className="hero-label">Resumo de hoje</span>
-          <h2>Mantenha o foco no trabalho que importa.</h2>
-          <p>Acompanhe a demanda de manutenção e conduza cada solicitação até a resolução.</p>
-        </div>
-        <div className="hero-icon"><Activity size={31} /></div>
-      </div>
       <section className="metric-grid">
         <Metric label="Todas as solicitações" value={data?.total ?? 0} icon={<ClipboardList />} tone="blue" />
         <Metric label="Abertas" value={data?.byStatus?.aberta ?? 0} icon={<Activity />} tone="mint" />
@@ -136,7 +128,7 @@ function SolicitanteDashboard() {
             <div className="empty-state">
               <ClipboardList size={23} />
               <strong>Nenhuma requisição ativa</strong>
-              <span>Abra uma nova solicitação para começar.</span>
+              <span>As solicitações abertas pelos solicitantes aparecerão aqui.</span>
             </div>
           )}
         </section>
