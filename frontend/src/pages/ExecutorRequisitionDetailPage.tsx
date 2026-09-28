@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Camera, ClipboardList, UserCheck, Wrench } from 'lucide-react';
+import { ArrowLeft, Camera, ClipboardList, History, UserCheck, Wrench } from 'lucide-react';
 import { apiErrorMessage } from '../services/api';
 import { maintenanceService } from '../services/maintenanceService';
 import { useAuthStore } from '../store/authStore';
 import { useToast } from '../components/Toast';
+import BeforeAfterPhotos from '../components/BeforeAfterPhotos';
+import HistoryTimeline from '../components/HistoryTimeline';
 import type { RequisitionStatus, RequestMaterial } from '../types';
 
 const statusLabels: Record<RequisitionStatus, string> = {
@@ -36,10 +38,19 @@ export default function ExecutorRequisitionDetailPage() {
     queryFn: () => maintenanceService.executionHistory(id),
   });
 
+  const changeHistoryQuery = useQuery({
+    queryKey: ['requisition-history', id],
+    queryFn: () => maintenanceService.requisitionHistory(id),
+    enabled: Boolean(id),
+  });
+
   const materialsQuery = useQuery({
     queryKey: ['materials', id],
     queryFn: () => maintenanceService.requestMaterials(id),
   });
+
+  const locationsQuery = useQuery({ queryKey: ['locations'], queryFn: maintenanceService.locations });
+  const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: maintenanceService.categories });
 
   const [executionForm, setExecutionForm] = useState({
     executionDescription: '',
@@ -48,12 +59,19 @@ export default function ExecutorRequisitionDetailPage() {
     photoUrl: '',
   });
 
+  const invalidateRequisition = () => {
+    void queryClient.invalidateQueries({ queryKey: ['requisition', id] });
+    void queryClient.invalidateQueries({ queryKey: ['requisitions'] });
+    void queryClient.invalidateQueries({ queryKey: ['execution-history', id] });
+    void queryClient.invalidateQueries({ queryKey: ['requisition-history', id] });
+    void queryClient.invalidateQueries({ queryKey: ['executions'] });
+  };
+
   const assignMutation = useMutation({
     mutationFn: () => maintenanceService.selfAssign(id),
     onSuccess: () => {
       setError('');
-      void queryClient.invalidateQueries({ queryKey: ['requisition', id] });
-      void queryClient.invalidateQueries({ queryKey: ['requisitions'] });
+      invalidateRequisition();
     },
     onError: (reason) => setError(apiErrorMessage(reason)),
   });
@@ -62,9 +80,7 @@ export default function ExecutorRequisitionDetailPage() {
     mutationFn: () => maintenanceService.registerExecution(id, executionForm),
     onSuccess: () => {
       setError('');
-      void queryClient.invalidateQueries({ queryKey: ['requisition', id] });
-      void queryClient.invalidateQueries({ queryKey: ['requisitions'] });
-      void queryClient.invalidateQueries({ queryKey: ['execution-history', id] });
+      invalidateRequisition();
       navigate('/executor');
     },
     onError: (reason) => setError(apiErrorMessage(reason)),
@@ -91,6 +107,9 @@ export default function ExecutorRequisitionDetailPage() {
   const requisition = requisitionQuery.data;
   const history = historyQuery.data ?? [];
   const materials = materialsQuery.data ?? [];
+  const changeHistory = changeHistoryQuery.data ?? [];
+  const locations = locationsQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
 
   if (requisitionQuery.isLoading) {
     return <div className="empty-state"><p>Carregando requisição...</p></div>;
@@ -100,9 +119,16 @@ export default function ExecutorRequisitionDetailPage() {
     return <div className="empty-state">Requisição não encontrada.</div>;
   }
 
+  const locationName = (locationId?: string) =>
+    locations.find((location) => location.id === locationId)?.name ?? locationId ?? 'Não informado';
+  const categoryName = (categoryId?: string) =>
+    categories.find((category) => category.id === categoryId)?.name ?? categoryId ?? 'Não informada';
+
   const isAssignedToMe = requisition.executorId === currentUser?.id;
   const isAvailable = !requisition.executorId && requisition.status === 'aberta';
   const isCompleted = requisition.status === 'concluida' || requisition.status === 'cancelada';
+  const beforePhoto = requisition.photoUrl;
+  const afterPhoto = history.find((record) => Boolean(record.photoUrl))?.photoUrl;
 
   return <>
     <div className="page-heading">
@@ -115,7 +141,7 @@ export default function ExecutorRequisitionDetailPage() {
 
     {error && <p className="form-error">{error}</p>}
 
-    <div className="detail-grid">
+    <div className="detail-stack">
       <section className="panel detail-main">
         <div className="detail-top">
           <span className={`status-badge ${requisition.status ?? 'aberta'}`}>
@@ -139,13 +165,15 @@ export default function ExecutorRequisitionDetailPage() {
           </div>
           <div>
             <dt>Local</dt>
-            <dd>{requisition.locationId ?? 'Não atribuído'}</dd>
+            <dd>{locationName(requisition.locationId)}</dd>
           </div>
           <div>
             <dt>Categoria</dt>
-            <dd>{requisition.categoryId ?? 'Não atribuída'}</dd>
+            <dd>{categoryName(requisition.categoryId)}</dd>
           </div>
         </dl>
+
+        <BeforeAfterPhotos beforeUrl={beforePhoto} afterUrl={afterPhoto} />
 
         {requisition.executionDescription && (
           <div style={{ marginTop: '24px' }}>
@@ -160,6 +188,21 @@ export default function ExecutorRequisitionDetailPage() {
             )}
           </div>
         )}
+
+        <div className="detail-subsection">
+          <div className="detail-subsection-head">
+            <div>
+              <p className="eyebrow">Histórico</p>
+              <h3>Linha do tempo das alterações</h3>
+            </div>
+            <History size={18} />
+          </div>
+          <HistoryTimeline
+            entries={changeHistory}
+            isLoading={changeHistoryQuery.isLoading}
+            emptyMessage="Nenhuma alteração registrada nesta requisição."
+          />
+        </div>
       </section>
 
       <section className="panel">
@@ -255,49 +298,51 @@ export default function ExecutorRequisitionDetailPage() {
           </div>
         )}
 
-        <div style={{ padding: '0 24px 24px', borderTop: '1px solid var(--border)', marginTop: '16px', paddingTop: '16px' }}>
-          <p className="eyebrow" style={{ marginBottom: '8px' }}>Materiais</p>
-          <h3 style={{ marginBottom: '12px', fontSize: '16px' }}>Adicionar material</h3>
-          <form className="admin-form" onSubmit={(e) => {
-            e.preventDefault();
-            if (!newMaterial.materialsNeeded.trim()) return;
-            createMaterialMutation.mutate();
-          }}>
-            <label>Material necessário
-              <textarea
-                required
-                rows={2}
-                value={newMaterial.materialsNeeded}
-                onChange={(event) => setNewMaterial({ ...newMaterial, materialsNeeded: event.target.value })}
-                placeholder="Ex: 01 tomada 20A"
-              />
-            </label>
-            <label>Motivo
-              <textarea
-                rows={2}
-                value={newMaterial.reason}
-                onChange={(event) => setNewMaterial({ ...newMaterial, reason: event.target.value })}
-                placeholder="Motivo da necessidade"
-              />
-            </label>
-            <button className="secondary-button" disabled={createMaterialMutation.isPending || !newMaterial.materialsNeeded.trim()}>
-              {createMaterialMutation.isPending ? 'Adicionando...' : 'Adicionar material'}
-            </button>
-          </form>
-          {materials.length > 0 && (
-            <div style={{ marginTop: '16px' }}>
-              <p className="eyebrow" style={{ marginBottom: '8px' }}>Materiais da requisição</p>
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                {materials.map((m: RequestMaterial) => (
-                  <li key={m.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: '14px' }}>
-                    <strong>{m.materialsNeeded}</strong>
-                    {m.reason && <span style={{ color: 'var(--muted)', marginLeft: '8px' }}>{m.reason}</span>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        {requisition.executorId && (
+          <div style={{ padding: '0 24px 24px', borderTop: '1px solid var(--border)', marginTop: '16px', paddingTop: '16px' }}>
+            <p className="eyebrow" style={{ marginBottom: '8px' }}>Materiais</p>
+            <h3 style={{ marginBottom: '12px', fontSize: '16px' }}>Adicionar material</h3>
+            <form className="admin-form" onSubmit={(e) => {
+              e.preventDefault();
+              if (!newMaterial.materialsNeeded.trim()) return;
+              createMaterialMutation.mutate();
+            }}>
+              <label>Material necessário
+                <textarea
+                  required
+                  rows={2}
+                  value={newMaterial.materialsNeeded}
+                  onChange={(event) => setNewMaterial({ ...newMaterial, materialsNeeded: event.target.value })}
+                  placeholder="Ex: 01 tomada 20A"
+                />
+              </label>
+              <label>Motivo
+                <textarea
+                  rows={2}
+                  value={newMaterial.reason}
+                  onChange={(event) => setNewMaterial({ ...newMaterial, reason: event.target.value })}
+                  placeholder="Motivo da necessidade"
+                />
+              </label>
+              <button className="secondary-button" disabled={createMaterialMutation.isPending || !newMaterial.materialsNeeded.trim()}>
+                {createMaterialMutation.isPending ? 'Adicionando...' : 'Adicionar material'}
+              </button>
+            </form>
+            {materials.length > 0 && (
+              <div style={{ marginTop: '16px' }}>
+                <p className="eyebrow" style={{ marginBottom: '8px' }}>Materiais da requisição</p>
+                <ul style={{ listStyle: 'none', padding: 0 }}>
+                  {materials.map((m: RequestMaterial) => (
+                    <li key={m.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: '14px' }}>
+                      <strong>{m.materialsNeeded}</strong>
+                      {m.reason && <span style={{ color: 'var(--muted)', marginLeft: '8px' }}>{m.reason}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </section>
     </div>
 
