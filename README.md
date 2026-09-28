@@ -150,6 +150,37 @@ E-mail: admin@empresa.com
 Senha: Admin@123
 ```
 
+### 5.1 Seed de desenvolvimento (dados de demonstração)
+
+```bash
+npm run seed:dev
+```
+
+Também é **idempotente** (registros já existentes são ignorados) e popula o ambiente local:
+
+| Item | Descrição |
+|------|-----------|
+| **Usuários de dev** | 8 usuários: admin, gestor, 3 executores e 3 solicitantes |
+| **Locais e categorias** | Garante os mesmos dados de referência do `npm run seed` |
+| **12 requisições** | Abertas por solicitantes diferentes e atribuídas a executores diferentes, cobrindo todos os status: `aberta`, `em_analise`, `em_atendimento`, `aguardando_material`, `concluida` e `cancelada` |
+| **Linha do tempo** | Histórico de cada requisição (criação, atribuição, mudanças de status, execução e cancelamento), com data e responsável |
+| **Execuções e materiais** | Registros de execução das requisições concluídas e uma solicitação de material pendente |
+
+**Credenciais de desenvolvimento** (gravadas em `backend/tmp/dev-credentials.txt`):
+
+```text
+admin:       admin@dev.com / Admin@123
+gestor:      gestor@dev.com / Gestor@123
+executor:    executor@dev.com / Executor@123
+executor:    executor2@dev.com / Executor2@123
+executor:    executor3@dev.com / Executor3@123
+solicitante: solicitante@dev.com / Solicitante@123
+solicitante: solicitante2@dev.com / Solicitante2@123
+solicitante: solicitante3@dev.com / Solicitante3@123
+```
+
+As requisições de demonstração são reconhecidas pela descrição e a numeração segue a mesma regra da API (total de requisições + 1), então rodar o seed não quebra a sequência `REQ-0000X`.
+
 ### 6. Executar
 
 ```bash
@@ -331,6 +362,7 @@ npm run start       # Inicia a API normalmente
 npm run start:dev   # Inicia a API com watch mode
 npm run build       # Compila o backend
 npm run seed        # Cria o administrador inicial e exibe as credenciais
+npm run seed:dev    # Cria usuários, requisições e histórico de demonstração
 npm run start:prod  # Executa a versão compilada
 npm run lint        # Executa o ESLint com correção automática
 ```
@@ -386,12 +418,52 @@ O frontend está conectado aos endpoints atualmente implementados para:
 - resumo do dashboard;
 - listagem e detalhes de requisições;
 - atualização de status de requisições;
+- histórico de alterações das requisições (quem, o quê e quando) com linha do tempo visual;
+- log de auditoria do sistema (quem, o quê, quando e resultado) com filtros por usuário, data, ação, objeto e resultado;
+- visualização do histórico completo de uma requisição a partir da auditoria;
+- registro de execução pelo executor (descrição, materiais, observações e foto);
+- finalização e encerramento de requisições;
+- visualização das fotos registradas antes e depois da manutenção;
 - consulta de usuários;
 - cadastro de locais (listar, criar, editar e excluir);
 - cadastro de categorias de manutenção (listar, criar, editar e excluir);
 - consulta de executores.
 
 O login e o registro emitem access e refresh tokens. O frontend envia o access token nas requisições protegidas e tenta renová-lo automaticamente quando ele expira. O refresh token é rotacionado a cada renovação e o token anterior é invalidado.
+
+## Auditoria
+
+A tabela `historico_alteracoes` é o log de auditoria do sistema. Cada registro responde às quatro perguntas do checklist:
+
+| Pergunta | Colunas |
+| --- | --- |
+| Quem | `usuario_id` e `usuario_nome` |
+| O quê | `acao` e `descricao` |
+| Quando | `criado_em` |
+| Resultado | `resultado` (`sucesso`/`falha`) e `resultado_detalhe` |
+
+O objeto auditado fica em `entidade` (`requisicao`, `usuario`, `local`, `categoria` ou `sistema`) com `entidade_id`. Eventos de requisição também mantêm `requisicao_id` preenchido, o que alimenta a linha do tempo da própria requisição.
+
+O que é auditado:
+
+- requisições: criação, edição, alteração de status, atribuição de executor, registro de execução, observação, solicitação de material, finalização e cancelamento;
+- usuários: criação (inclusive cadastro público), atualização (com o detalhe do que mudou, ex.: `perfil de executor para gestor`) e redefinição de senha;
+- locais e categorias: criação, atualização e exclusão;
+- operações com erro: o filtro global de exceções registra `Falha em <MÉTODO> <rota> (HTTP <status>): <mensagem>` com `resultado = falha` nas requisições autenticadas.
+
+Login e logout ficam de fora da auditoria: abrir e encerrar sessão não é uma operação sobre o negócio, e uma falha de login não tem "quem" autenticado a registrar.
+
+Endpoint (somente administrador):
+
+```bash
+GET /api/auditoria?usuario=&acao=&entidade=&resultado=&de=&ate=&requisicaoId=&page=1&limit=10
+```
+
+A resposta é `{ data, total, page, limit }`. Os filtros são opcionais; `de`/`ate` aceitam `YYYY-MM-DD` e um intervalo invertido retorna `400`. Sem `limit` a API responde 10 registros por página (teto de 100).
+
+A tela **Auditoria** (menu lateral, perfil administrador, rota `/auditoria`) aplica esses filtros, mostra Quando, Quem, Operação, Objeto e Resultado, pagina os registros em **10 por página** e abre o histórico completo da requisição ligada ao evento em um painel com a linha do tempo.
+
+Em desenvolvimento a tabela é sincronizada pelo TypeORM; em bancos já existentes a migration `1710000000002-AuditLogColumns` torna `requisicao_id` opcional e adiciona as colunas de auditoria e os índices de consulta.
 
 ## Arquitetura do backend
 
@@ -420,7 +492,10 @@ As principais tabelas atuais usam nomes físicos em português no MySQL:
 - `usuarios`: usuários, perfis, credenciais e controle de versão da sessão;
 - `locais`: locais de atendimento;
 - `categorias`: categorias de manutenção;
-- `requisicoes`: requisições, status, prioridade e dados de execução.
+- `requisicoes`: requisições, status, prioridade e dados de execução;
+- `historico_alteracoes`: log de auditoria do sistema (quem, o quê, quando e resultado), com o objeto auditado (`entidade`/`entidade_id`) e a ligação opcional com a requisição (`requisicao_id`);
+- `registros_execucao`: registros de execução salvos pelo executor;
+- `materiais_solicitacao`: materiais solicitados durante o atendimento.
 
 As propriedades TypeScript e os contratos HTTP continuam em inglês para preservar a compatibilidade com o frontend. Apenas os nomes físicos das tabelas e colunas do banco foram traduzidos.
 

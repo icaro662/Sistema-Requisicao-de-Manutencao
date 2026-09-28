@@ -84,6 +84,10 @@ export default function ExecutorPage() {
       matchesFilters(row),
   );
 
+  const available = requisitions.filter(
+    (row: Requisition) => !row.executorId && row.status === 'aberta' && matchesFilters(row),
+  );
+
   const selectStyle = {
     padding: '7px 10px',
     borderRadius: '6px',
@@ -217,6 +221,42 @@ export default function ExecutorPage() {
             <ClipboardList size={23} />
             <strong>Nenhuma solicitação atribuída</strong>
             <span>Assuma uma solicitação.</span>
+          </div>
+        )}
+      </section>
+
+      <section className="panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Fila de atendimento</p>
+            <h2>Disponíveis para assumir</h2>
+          </div>
+          <ClipboardList size={20} />
+        </div>
+
+        {available.length ? (
+          <div className="people-list">
+            {available.map((req: Requisition) => (
+              <div className="person-row" key={req.id}>
+                <div className="avatar">{req.number?.[0] ?? 'R'}</div>
+                <div>
+                  <strong>{req.number ?? req.id.slice(0, 8)}</strong>
+                  <span>{req.description?.slice(0, 60) ?? 'Sem descrição'}</span>
+                  <span>{locationName(req.locationId)} · {categoryName(req.categoryId)}</span>
+                </div>
+                <span className={`priority ${req.priority ?? 'media'}`}>{priorityLabels[req.priority ?? 'media']}</span>
+                <span className={`status-badge ${req.status ?? 'aberta'}`}>{statusLabels[req.status ?? 'aberta']}</span>
+                <Link to={`/executor/requisicoes/${req.id}`} className="secondary-button compact">
+                  Ver detalhes
+                </Link>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <ClipboardList size={23} />
+            <strong>Nenhuma solicitação disponível</strong>
+            <span>Novas solicitações aparecerão aqui.</span>
           </div>
         )}
       </section>

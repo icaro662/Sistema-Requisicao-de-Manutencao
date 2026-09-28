@@ -13,6 +13,10 @@ const roleLabels: Record<UserRole, string> = {
   admin: 'Administrador',
 };
 
+// Solicitantes se cadastram sozinhos; a administração cria apenas acessos
+// operacionais (executor/gestor) e administrativos.
+const assignableRoles = (Object.keys(roleLabels) as UserRole[]).filter((role) => role !== 'solicitante');
+
 const emptyForm: ManagedUserInput = {
   name: '',
   email: '',
@@ -59,7 +63,7 @@ export default function AdminUsersPage() {
           <label>Nome<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
           <label>E-mail<input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
           <label>Telefone <span className="optional">(opcional)</span><input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></label>
-          <label>Perfil<select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as StaffRole })}>{Object.entries(roleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <label>Perfil<select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as StaffRole })}>{assignableRoles.map((value) => <option key={value} value={value}>{roleLabels[value]}</option>)}</select></label>
           <label>Senha inicial<input required minLength={8} type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></label>
           <button className="primary-button" disabled={createMutation.isPending}><UserPlus size={16} />{createMutation.isPending ? 'Criando...' : 'Criar usuário'}</button>
         </form>

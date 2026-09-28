@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import {
   Filter,
   RefreshCw,
@@ -16,9 +17,22 @@ import RequisitionModal from './RequisitionModal';
 export default function RequisitionTable() {
   const [search, setSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('todos');
-  const [selectedRequisitionId, setSelectedRequisitionId] =
-    useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
+
+  // The open requisition lives in the URL (?requisition=<id>) so links
+  // (e.g. from a notification) open the right record directly.
+  const selectedRequisitionId = searchParams.get('requisition');
+
+  const openRequisition = (requisitionId: string) => {
+    setSearchParams({ requisition: requisitionId }, { replace: true });
+  };
+
+  const closeRequisition = () => {
+    if (searchParams.has('requisition')) {
+      setSearchParams({}, { replace: true });
+    }
+  };
 
   const query = useQuery({
     queryKey: ['requisitions', search],
@@ -214,7 +228,7 @@ export default function RequisitionTable() {
                       key={row.id}
                       style={{ cursor: 'pointer' }}
                       onClick={() =>
-                        setSelectedRequisitionId(row.id)
+                        openRequisition(row.id)
                       }
                     >
                       <td>
@@ -274,7 +288,7 @@ export default function RequisitionTable() {
                           aria-label="Abrir detalhes da requisição"
                           onClick={(event) => {
                             event.stopPropagation();
-                            setSelectedRequisitionId(row.id);
+                            openRequisition(row.id);
                           }}
                         >
                           <ArrowUpRight size={17} />
@@ -401,7 +415,7 @@ export default function RequisitionTable() {
       {selectedRequisitionId && (
         <RequisitionModal
           requisitionId={selectedRequisitionId}
-          onClose={() => setSelectedRequisitionId(null)}
+          onClose={closeRequisition}
         />
       )}
     </>

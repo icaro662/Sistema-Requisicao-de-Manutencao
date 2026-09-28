@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import {
   BarChart3,
-  Bell,
   ClipboardList,
   LogOut,
   MapPin,
   Menu,
+  ScrollText,
   Settings,
   Tag,
   Users,
@@ -16,6 +16,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../services/authService';
 import RoleRoute from '../components/RoleRoute';
+import NotificationsBell from '../components/NotificationsBell';
 import Dashboard from '../pages/Dashboard';
 import Requisitions from '../pages/Requisitions';
 import RequisitionDetail from '../pages/RequisitionDetailPage';
@@ -25,16 +26,29 @@ import ExecutorPage from '../pages/ExecutorPage';
 import ExecutorExecutionsPage from '../pages/ExecutorExecutionsPage';
 import ExecutorRequisitionDetailPage from '../pages/ExecutorRequisitionDetailPage';
 import ManagerPage from '../pages/ManagerPage';
-import NotificationsPage from '../pages/NotificationsPage';
 import ReferencePage from '../pages/ReferencePage';
 import AdminUsersPage from '../pages/AdminUsersPage';
 import ReportsPage from '../pages/ReportsPage';
 import LocationAdminPage from '../pages/LocationAdminPage';
 import CategoryAdminPage from '../pages/CategoryAdminPage';
 import SystemSettingsPage from '../pages/SystemSettingsPage';
+import AuditoriaPage from '../pages/AuditoriaPage';
+
+const formatTopbarDate = () =>
+  new Date().toLocaleDateString('pt-BR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
 export default function Shell() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [today, setToday] = useState(formatTopbarDate);
+
+  useEffect(() => {
+    const timer = setInterval(() => setToday(formatTopbarDate()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const signOut = useAuthStore((state) => state.signOut);
   const sessionEmail = useAuthStore((state) => state.sessionEmail);
@@ -51,15 +65,15 @@ export default function Shell() {
     { to: '/executor/execucoes', label: 'Histórico de execuções', icon: ClipboardList, roles: ['executor'] },
     { to: '/manager', label: 'Painel do gestor', icon: Users, roles: ['gestor'] },
     { to: '/reports', label: 'Relatórios', icon: BarChart3, roles: ['gestor', 'admin'] },
-    { to: '/notifications', label: 'Notificações', icon: Bell, roles: ['solicitante', 'executor', 'gestor', 'admin'] },
     { to: '/locais', label: 'Locais', icon: MapPin, roles: ['executor', 'gestor', 'admin'] },
     { to: '/categorias', label: 'Categorias', icon: Tag, roles: ['executor', 'gestor', 'admin'] },
     { to: '/users', label: 'Administração', icon: Users, roles: ['admin'] },
+    { to: '/auditoria', label: 'Auditoria', icon: ScrollText, roles: ['admin'] },
     { to: '/configuracoes', label: 'Configurações', icon: Settings, roles: ['admin'] },
   ];
 
   const navItems = role === 'executor'
-    ? allNavItems.filter((item) => item.to === '/executor' || item.to === '/executor/execucoes' || item.to === '/notifications')
+    ? allNavItems.filter((item) => item.to === '/executor' || item.to === '/executor/execucoes')
     : allNavItems.filter((item) => role && item.roles.includes(role));
 
   const { pathname } = useLocation();
@@ -134,8 +148,9 @@ export default function Shell() {
           </button>
           <div>
             <span className="topbar-kicker">Central de operações</span>
-            <strong>26 de setembro de 2026</strong>
+            <strong>{today}</strong>
           </div>
+          <NotificationsBell />
         </header>
         <main className="main-content">
           <Routes>
@@ -159,13 +174,13 @@ export default function Shell() {
               <Route path="/manager" element={<ManagerPage />} />
               <Route path="/reports" element={<ReportsPage />} />
             </Route>
-            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/locations" element={<ReferencePage type="locations" />} />
             <Route path="/categories" element={<ReferencePage type="categories" />} />
             <Route path="/locais" element={<LocationAdminPage />} />
             <Route path="/categorias" element={<CategoryAdminPage />} />
             <Route element={<RoleRoute roles={['admin']} />}>
               <Route path="/users" element={<AdminUsersPage />} />
+              <Route path="/auditoria" element={<AuditoriaPage />} />
               <Route path="/configuracoes" element={<SystemSettingsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

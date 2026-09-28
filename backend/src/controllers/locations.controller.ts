@@ -1,5 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { RequestUser } from '../common/interfaces/request-user.interface';
 import { JwtGuard } from '../core/guards/jwt.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { LocationsService } from '../services/locations.service';
@@ -19,19 +21,19 @@ export class LocationsController {
 
   @Post()
   @Roles(UserRole.ADMIN)
-  create(@Body() dto: CreateLocationDto) {
-    return this.locationsService.create(dto);
+  create(@Body() dto: CreateLocationDto, @CurrentUser() user: RequestUser) {
+    return this.locationsService.create(dto, user);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN)
-  update(@Param('id') id: string, @Body() dto: UpdateLocationDto) {
-    return this.locationsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateLocationDto, @CurrentUser() user: RequestUser) {
+    return this.locationsService.update(id, dto, user);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
-  remove(@Param('id') id: string) {
-    return this.locationsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.locationsService.remove(id, user);
   }
 }

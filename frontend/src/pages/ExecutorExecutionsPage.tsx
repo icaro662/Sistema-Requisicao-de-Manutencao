@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Filter } from 'lucide-react';
 import PageHeading from '../components/PageHeading';
+import BeforeAfterPhotos from '../components/BeforeAfterPhotos';
 import { useAuthStore } from '../store/authStore';
 import { maintenanceService } from '../services/maintenanceService';
 import { statusLabels } from '../utils/status';
@@ -181,11 +182,7 @@ export default function ExecutorExecutionsPage() {
                           {record.observations && (
                             <p style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '8px' }}><strong>Observações:</strong> {record.observations}</p>
                           )}
-                          {record.photoUrl && (
-                            <div style={{ marginTop: '8px' }}>
-                              <img src={record.photoUrl} alt="Foto da execução" style={{ maxWidth: '200px', borderRadius: '8px' }} />
-                            </div>
-                          )}
+                          <BeforeAfterPhotos beforeUrl={record.requisition?.photoUrl} afterUrl={record.photoUrl} />
                         </div>
                       </td>
                     </tr>

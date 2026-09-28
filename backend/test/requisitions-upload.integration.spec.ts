@@ -22,6 +22,7 @@ describe('Requisition upload flow', () => {
   };
   const locationsRepository = { findOne: jest.fn() };
   const categoriesRepository = { findOne: jest.fn() };
+  const historyService = { record: jest.fn(), describeUser: jest.fn() };
   const filename = `integration-${Date.now()}.png`;
   const filepath = join(uploadDirectory, filename);
   let uploadService: UploadService;
@@ -34,10 +35,13 @@ describe('Requisition upload flow', () => {
     categoriesRepository.findOne.mockResolvedValue({ id: 'category-id' });
     requisitionsRepository.count.mockResolvedValue(0);
     uploadService = new UploadService(uploadedFilesRepository as never);
+    historyService.record.mockResolvedValue(null);
+    historyService.describeUser.mockResolvedValue('User');
     requisitionsService = new RequisitionsService(
       requisitionsRepository as never,
       locationsRepository as never,
       categoriesRepository as never,
+      historyService as never,
     );
   });
 

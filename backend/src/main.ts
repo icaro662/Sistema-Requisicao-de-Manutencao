@@ -4,7 +4,6 @@ import { config as dotenvConfig } from 'dotenv';
 import { join } from 'node:path';
 import express from 'express';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
 
 dotenvConfig({ path: join(process.cwd(), 'src/config/.env') });
 
@@ -19,7 +18,8 @@ async function bootstrap(): Promise<void> {
     whitelist: true,
     forbidNonWhitelisted: true,
   }));
-  app.useGlobalFilters(new HttpExceptionFilter());
+  // O HttpExceptionFilter é registrado no AppModule (APP_FILTER) para que
+  // injete o HistoryService e audite as operações que falham.
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port);

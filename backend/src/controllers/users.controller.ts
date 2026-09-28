@@ -19,8 +19,8 @@ export class UsersController {
   findAll() { return this.usersService.findAll(); }
 
   @Post()
-  async create(@Body() dto: CreateUserDto) {
-    const { password: _password, ...user } = await this.usersService.createUser(dto);
+  async create(@Body() dto: CreateUserDto, @CurrentUser() currentUser: RequestUser) {
+    const { password: _password, ...user } = await this.usersService.createUser(dto, currentUser);
     return user;
   }
 
@@ -28,7 +28,7 @@ export class UsersController {
   findOne(@Param('id') id: string) { return this.usersService.findOne(id); }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto, @CurrentUser() _currentUser: RequestUser) {
-    return this.usersService.updateUser(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateUserDto, @CurrentUser() currentUser: RequestUser) {
+    return this.usersService.updateUser(id, dto, currentUser);
   }
 }

@@ -21,6 +21,6 @@ export class RequestMaterialController {
   @Post('requisicao/:id')
   @Roles(UserRole.EXECUTOR)
   create(@Param('id') id: string, @Body() dto: CreateRequestMaterialDto, @CurrentUser() user: RequestUser) {
-    return this.requestMaterialService.create(id, dto);
+    return this.requestMaterialService.create(id, dto, user.id);
   }
 }

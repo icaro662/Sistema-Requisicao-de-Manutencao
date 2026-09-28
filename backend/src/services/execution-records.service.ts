@@ -2,8 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExecutionRecord } from '../models/execution-record.entity';
+import { HistoryAction } from '../models/history.entity';
 import { Requisition } from '../models/requisition.entity';
 import { RequisitionStatus } from '../core/enums/status.enum';
+import { HistoryService } from './history.service';
 import { UserRole } from '../models/user.entity';
 
 export interface RegisterExecutionDto {
@@ -20,6 +22,7 @@ export class ExecutionRecordsService {
     private readonly executionRecordsRepository: Repository<ExecutionRecord>,
     @InjectRepository(Requisition)
     private readonly requisitionsRepository: Repository<Requisition>,
+    private readonly historyService: HistoryService,
   ) {}
 
   async findRequisitionHistory(requisitionId: string): Promise<ExecutionRecord[]> {
@@ -56,12 +59,25 @@ export class ExecutionRecordsService {
     const saved = await this.executionRecordsRepository.save(record);
 
     // Update requisition status to completed
+    const previousStatus = requisition.status;
     requisition.status = RequisitionStatus.COMPLETED;
     requisition.executionDescription = dto.executionDescription;
     requisition.materialsUsed = dto.materialsUsed || null;
     requisition.observations = dto.observations || null;
     requisition.executionDate = new Date();
     await this.requisitionsRepository.save(requisition);
+
+    // Registra o registro de execução no histórico (Quem, O quê, Quando) da requisição.
+    await this.historyService.record({
+      requisitionId,
+      userId: executorId,
+      userName: executorName,
+      action: HistoryAction.EXECUTION_REGISTERED,
+      description: `Registro de execução salvo: ${dto.executionDescription}`,
+      previousStatus,
+      newStatus: RequisitionStatus.COMPLETED,
+      referenceId: saved.id,
+    });
 
     return saved;
   }
@@ -79,7 +95,16 @@ export class ExecutionRecordsService {
     }
 
     requisition.observations = observation;
-    return this.requisitionsRepository.save(requisition);
+    const saved = await this.requisitionsRepository.save(requisition);
+
+    await this.historyService.record({
+      requisitionId,
+      userId: executorId,
+      action: HistoryAction.OBSERVATION_ADDED,
+      description: `Observação adicionada: ${observation}`,
+    });
+
+    return saved;
   }
 
   async findAllByExecutor(executorId: string): Promise<ExecutionRecord[]> {
