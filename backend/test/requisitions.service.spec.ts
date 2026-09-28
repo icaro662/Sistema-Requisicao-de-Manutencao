@@ -18,6 +18,7 @@ describe('RequisitionsService', () => {
   };
   const locationsRepository = { findOne: jest.fn() };
   const categoriesRepository = { findOne: jest.fn() };
+  const historyService = { record: jest.fn(), describeUser: jest.fn() };
   let service: RequisitionsService;
 
   beforeEach(() => {
@@ -25,11 +26,14 @@ describe('RequisitionsService', () => {
     queryBuilder.andWhere.mockReturnThis();
     queryBuilder.orderBy.mockReturnThis();
     queryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+    historyService.record.mockResolvedValue(null);
+    historyService.describeUser.mockResolvedValue('Ana Executor');
     requisitionsRepository.createQueryBuilder.mockReturnValue(queryBuilder);
     service = new RequisitionsService(
       requisitionsRepository as never,
       locationsRepository as never,
       categoriesRepository as never,
+      historyService as never,
     );
   });
 
@@ -100,5 +104,101 @@ describe('RequisitionsService', () => {
 
     expect(requisition.status).toBe(RequisitionStatus.IN_SERVICE);
     expect(requisitionsRepository.save).toHaveBeenCalledWith(requisition);
+  });
+
+  it('logs status changes with who, what and when in the history', async () => {
+    const requisition = { executorId: 'executor-id', status: RequisitionStatus.OPEN };
+    requisitionsRepository.findOne.mockResolvedValue(requisition);
+    requisitionsRepository.save.mockResolvedValue(requisition);
+
+    await service.updateStatus('requisition-id', { status: RequisitionStatus.IN_SERVICE }, UserRole.MANAGER, 'manager-id');
+
+    expect(historyService.record).toHaveBeenCalledWith({
+      requisitionId: 'requisition-id',
+      userId: 'manager-id',
+      action: 'alteracao_status',
+      description: 'Status alterado de "Aberta" para "Em atendimento"',
+      previousStatus: RequisitionStatus.OPEN,
+      newStatus: RequisitionStatus.IN_SERVICE,
+    });
+  });
+
+  it('does not log history when the status does not change', async () => {
+    const requisition = { executorId: 'executor-id', status: RequisitionStatus.OPEN };
+    requisitionsRepository.findOne.mockResolvedValue(requisition);
+    requisitionsRepository.save.mockResolvedValue(requisition);
+
+    await service.updateStatus('requisition-id', { status: RequisitionStatus.OPEN }, UserRole.EXECUTOR, 'executor-id');
+
+    expect(historyService.record).not.toHaveBeenCalled();
+  });
+
+  it('lets the executor take an available requisition for themselves', async () => {
+    const requisition = { executorId: null, status: RequisitionStatus.OPEN };
+    requisitionsRepository.findOne.mockResolvedValue(requisition);
+    requisitionsRepository.save.mockResolvedValue(requisition);
+
+    await service.assignExecutor('requisition-id', 'executor-id', UserRole.EXECUTOR, 'executor-id');
+
+    expect(requisition.executorId).toBe('executor-id');
+    expect(requisition.status).toBe(RequisitionStatus.IN_SERVICE);
+    expect(historyService.record).toHaveBeenCalledWith(expect.objectContaining({
+      requisitionId: 'requisition-id',
+      action: 'atribuicao_executor',
+      description: 'Executor Ana Executor assumiu o atendimento',
+    }));
+  });
+
+  it('rejects an executor taking a requisition assigned to someone else', async () => {
+    requisitionsRepository.findOne.mockResolvedValue({ executorId: 'other-executor', status: RequisitionStatus.IN_SERVICE });
+
+    await expect(service.assignExecutor('requisition-id', 'executor-id', UserRole.EXECUTOR, 'executor-id'))
+      .rejects.toThrow('Requisição já está atribuída a outro executor');
+
+    expect(requisitionsRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('finalizes a requisition and records it in the history', async () => {
+    const requisition = { executorId: 'executor-id', status: RequisitionStatus.IN_SERVICE, executionDate: null as Date | null };
+    requisitionsRepository.findOne.mockResolvedValue(requisition);
+    requisitionsRepository.save.mockResolvedValue(requisition);
+
+    await service.finalize('requisition-id', { observations: 'Serviço conferido' }, UserRole.EXECUTOR, 'executor-id');
+
+    expect(requisition.status).toBe(RequisitionStatus.COMPLETED);
+    expect(requisition.executionDate).toBeInstanceOf(Date);
+    expect(historyService.record).toHaveBeenCalledWith(expect.objectContaining({
+      requisitionId: 'requisition-id',
+      userId: 'executor-id',
+      action: 'finalizacao',
+      description: 'Requisição finalizada: Serviço conferido',
+      previousStatus: RequisitionStatus.IN_SERVICE,
+      newStatus: RequisitionStatus.COMPLETED,
+    }));
+  });
+
+  it('rejects finalization by an executor that is not assigned', async () => {
+    requisitionsRepository.findOne.mockResolvedValue({ executorId: 'other-executor', status: RequisitionStatus.IN_SERVICE });
+
+    await expect(service.finalize('requisition-id', {}, UserRole.EXECUTOR, 'executor-id'))
+      .rejects.toThrow('Requisição não encontrada');
+
+    expect(requisitionsRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('closes a requisition without conclusion keeping the reason in the history', async () => {
+    const requisition = { executorId: 'executor-id', status: RequisitionStatus.IN_SERVICE };
+    requisitionsRepository.findOne.mockResolvedValue(requisition);
+    requisitionsRepository.save.mockResolvedValue(requisition);
+
+    await service.cancel('requisition-id', { motivo: 'Fora de escopo' }, UserRole.MANAGER, 'manager-id');
+
+    expect(requisition.status).toBe(RequisitionStatus.CANCELLED);
+    expect(historyService.record).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'cancelamento',
+      description: 'Requisição encerrada sem conclusão: Fora de escopo',
+      previousStatus: RequisitionStatus.IN_SERVICE,
+      newStatus: RequisitionStatus.CANCELLED,
+    }));
   });
 });
