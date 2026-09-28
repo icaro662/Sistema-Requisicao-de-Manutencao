@@ -2,7 +2,9 @@ import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { X, RefreshCw, Clock, ArrowUpRight } from 'lucide-react';
 import { apiErrorMessage } from '../services/api';
 import { maintenanceService } from '../services/maintenanceService';
+import { useAuthStore } from '../store/authStore';
 import { statusLabels, statusOptions, getStatusColor } from '../utils/status';
+import HistoryTimeline from './HistoryTimeline';
 import type { RequisitionStatus } from '../types';
 
 export default function RequisitionModal({
@@ -13,10 +15,21 @@ export default function RequisitionModal({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const currentUser = useAuthStore((state) => state.user);
+  const canChangeStatus =
+    currentUser?.role === 'admin' ||
+    currentUser?.role === 'gestor' ||
+    currentUser?.role === 'executor';
 
   const query = useQuery({
     queryKey: ['requisition', requisitionId],
     queryFn: () => maintenanceService.requisition(requisitionId),
+  });
+
+  const historyQuery = useQuery({
+    queryKey: ['requisition-history', requisitionId],
+    queryFn: () => maintenanceService.requisitionHistory(requisitionId),
+    enabled: Boolean(requisitionId),
   });
 
   const mutation = useMutation({
@@ -29,25 +42,13 @@ export default function RequisitionModal({
       void queryClient.invalidateQueries({
         queryKey: ['requisitions'],
       });
+      void queryClient.invalidateQueries({
+        queryKey: ['requisition-history', requisitionId],
+      });
     },
   });
 
   const requisition = query.data;
-
-  const mockHistory = [
-    {
-      id: 1,
-      action: 'Requisição Aberta',
-      date: '25/09/2026 às 10:30',
-      user: 'solicitante@gmail.com',
-    },
-    {
-      id: 2,
-      action: 'Status alterado para "Em análise"',
-      date: '26/09/2026 às 09:15',
-      user: 'operador@gmail.com',
-    },
-  ];
 
   return (
     <div
@@ -242,63 +243,14 @@ export default function RequisitionModal({
                   <Clock size={16} />
                   Histórico de atividade
                 </h4>
-                <ul
-                  style={{
-                    listStyle: 'none',
-                    paddingLeft: '8px',
-                    margin: 0,
-                    borderLeft: '2px solid #e5e7eb',
-                  }}
-                >
-                  {mockHistory.map(
-                    (item, index) => (
-                      <li
-                        key={item.id}
-                        style={{
-                          position: 'relative',
-                          paddingLeft: '20px',
-                          paddingBottom:
-                            index !==
-                            mockHistory.length - 1
-                              ? '12px'
-                              : '0',
-                        }}
-                      >
-                        <span
-                          style={{
-                            position: 'absolute',
-                            left: '-5px',
-                            top: '4px',
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            backgroundColor: '#9ca3af',
-                          }}
-                        />
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: '13px',
-                            fontWeight: 500,
-                            color: '#111827',
-                          }}
-                        >
-                          {item.action}
-                        </p>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            color: '#6b7280',
-                          }}
-                        >
-                          {item.date} • {item.user}
-                        </span>
-                      </li>
-                    ),
-                  )}
-                </ul>
+                <HistoryTimeline
+                  entries={historyQuery.data ?? []}
+                  isLoading={historyQuery.isLoading}
+                  emptyMessage="Nenhuma alteração registrada nesta requisição."
+                />
               </div>
             </div>
+            {canChangeStatus && (
             <div
               style={{
                 backgroundColor: '#f9fafb',
@@ -387,6 +339,7 @@ export default function RequisitionModal({
                 </p>
               )}
             </div>
+            )}
           </div>
         ) : (
           <div className="empty-state">
