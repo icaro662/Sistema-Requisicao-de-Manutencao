@@ -117,6 +117,14 @@ DB_USERNAME=root
 DB_PASSWORD=sua-senha
 DB_NAME=maintenance_system
 DB_SYNCHRONIZE=true
+
+# SMTP
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USER=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_FROM=noreply@maintenance.com
+FRONTEND_URL=http://localhost:5173
 ```
 ### 4. Criar o banco de dados
 
@@ -334,17 +342,6 @@ npm run dev         # Inicia o servidor Vite
 npm run build       # Verifica os tipos e gera o build de produção
 npm run preview     # Serve o build localmente para validação
 ```
-
-## Primeiro acesso do cliente
-
-1. Execute `npm run seed` na pasta `backend/`.
-2. Inicie backend e frontend.
-3. Entre no painel com `admin@empresa.com` e `Admin@123`.
-4. Acesse **Administração** → **Usuários**.
-5. Altere a senha do próprio administrador para uma senha segura.
-6. Crie os acessos necessários, escolhendo entre `Solicitante`, `Executor` e `Gestor`.
-
-
 ## Estrutura de pastas
 
 ```text
@@ -393,8 +390,6 @@ O frontend está conectado aos endpoints atualmente implementados para:
 - cadastro de locais (listar, criar, editar e excluir);
 - cadastro de categorias de manutenção (listar, criar, editar e excluir);
 - consulta de executores.
-
-O login e o registro emitem access e refresh tokens. O frontend envia o access token nas requisições protegidas e tenta renová-lo automaticamente quando ele expira. O refresh token é rotacionado a cada renovação e o token anterior é invalidado.
 
 ## Auditoria
 
@@ -499,8 +494,6 @@ As principais tabelas atuais usam nomes físicos em português no MySQL:
 - `comunicacoes`: histórico do que foi enviado (canal aplicativo/e-mail, destinatário, assunto, conteúdo e resultado do envio);
 - `registros_execucao`: registros de execução salvos pelo executor;
 - `materiais_solicitacao`: materiais solicitados durante o atendimento.
-
-As propriedades TypeScript e os contratos HTTP continuam em inglês para preservar a compatibilidade com o frontend. Apenas os nomes físicos das tabelas e colunas do banco foram traduzidos.
 
 Em um banco já existente, a alteração dos nomes requer uma migration ou a recriação do schema. Em desenvolvimento, `DB_SYNCHRONIZE=true` permite que o TypeORM sincronize o modelo configurado.
 
