@@ -118,9 +118,6 @@ DB_PASSWORD=sua-senha
 DB_NAME=maintenance_system
 DB_SYNCHRONIZE=true
 ```
-
-> **Nota:** `DB_SYNCHRONIZE=true` cria/atualiza as tabelas automaticamente em desenvolvimento. Em produção, defina como `false` e use migrations.
-
 ### 4. Criar o banco de dados
 
 ```sql
@@ -145,11 +142,6 @@ O seed é **idempotente** — registros existentes são ignorados, então pode s
 
 **Credenciais do administrador:**
 
-```text
-E-mail: admin@empresa.com
-Senha: Admin@123
-```
-
 ### 5.1 Seed de desenvolvimento (dados de demonstração)
 
 ```bash
@@ -165,19 +157,6 @@ Também é **idempotente** (registros já existentes são ignorados) e popula o 
 | **12 requisições** | Abertas por solicitantes diferentes e atribuídas a executores diferentes, cobrindo todos os status: `aberta`, `em_analise`, `em_atendimento`, `aguardando_material`, `concluida` e `cancelada` |
 | **Linha do tempo** | Histórico de cada requisição (criação, atribuição, mudanças de status, execução e cancelamento), com data e responsável |
 | **Execuções e materiais** | Registros de execução das requisições concluídas e uma solicitação de material pendente |
-
-**Credenciais de desenvolvimento** (gravadas em `backend/tmp/dev-credentials.txt`):
-
-```text
-admin:       admin@dev.com / Admin@123
-gestor:      gestor@dev.com / Gestor@123
-executor:    executor@dev.com / Executor@123
-executor:    executor2@dev.com / Executor2@123
-executor:    executor3@dev.com / Executor3@123
-solicitante: solicitante@dev.com / Solicitante@123
-solicitante: solicitante2@dev.com / Solicitante2@123
-solicitante: solicitante3@dev.com / Solicitante3@123
-```
 
 As requisições de demonstração são reconhecidas pela descrição e a numeração segue a mesma regra da API (total de requisições + 1), então rodar o seed não quebra a sequência `REQ-0000X`.
 
@@ -285,25 +264,6 @@ Crie o banco antes de iniciar a API:
 ```sql
 CREATE DATABASE maintenance_system;
 ```
-
-Para desenvolvimento, `DB_SYNCHRONIZE=true` permite que o TypeORM sincronize as entidades com o banco. Em produção, prefira migrations e mantenha essa opção desativada.
-
-### Seed do administrador inicial
-
-Com o banco criado e o arquivo `.env` configurado, execute no diretório `backend/`:
-
-```bash
-npm run seed
-```
-
-O seed é idempotente. Na primeira execução, cria automaticamente:
-
-```text
-E-mail: admin@empresa.com
-Senha: Admin@123
-```
-
-As credenciais são exibidas no console. Se o administrador já existir, o seed não altera a senha atual.
 
 ## Configuração do frontend
 
@@ -421,6 +381,11 @@ O frontend está conectado aos endpoints atualmente implementados para:
 - histórico de alterações das requisições (quem, o quê e quando) com linha do tempo visual;
 - log de auditoria do sistema (quem, o quê, quando e resultado) com filtros por usuário, data, ação, objeto e resultado;
 - visualização do histórico completo de uma requisição a partir da auditoria;
+- campo de gestor responsável na requisição (definido na criação e editável), com lista de gestores em `GET /gestores`;
+- notificações automáticas ao gestor quando a requisição é criada, muda de status, recebe executor, registra execução, é concluída ou encerrada;
+- envio manual de notificação ao gestor pelo executor/solicitante (`POST /requisicoes/:id/notificar-gestor`);
+- e-mail com o resumo das alterações (Status, Executor, Local e nº da requisição);
+- tela de notificações do gestor com o histórico de comunicações enviadas (canal, destinatário e resultado);
 - registro de execução pelo executor (descrição, materiais, observações e foto);
 - finalização e encerramento de requisições;
 - visualização das fotos registradas antes e depois da manutenção;
@@ -465,6 +430,42 @@ A tela **Auditoria** (menu lateral, perfil administrador, rota `/auditoria`) apl
 
 Em desenvolvimento a tabela é sincronizada pelo TypeORM; em bancos já existentes a migration `1710000000002-AuditLogColumns` torna `requisicao_id` opcional e adiciona as colunas de auditoria e os índices de consulta.
 
+## Notificações e comunicações
+
+A requisição tem um **gestor responsável** (`requisicoes.gestor_id`), definido no formulário de criação e alterável na edição (`PATCH /requisicoes/:id`, `gestorId: null` remove). Ele é o destinatário das notificações; a lista de gestores ativos vem de:
+
+```bash
+GET /api/gestores          # qualquer usuário autenticado
+```
+
+O que gera notificação para o gestor:
+
+- criação da requisição;
+- alteração de status;
+- atribuição de executor (inclusive "assumir");
+- registro de execução, finalização e encerramento;
+- notificação manual enviada pelo executor/solicitante/gestor.
+
+Sem gestor definido, a notificação vai para toda a equipe de gestão ativa. O autor do próprio evento não é notificado (na notificação manual, ele também pode ser o destinatário).
+
+**Template.** `backend/src/core/templates/notification.template.ts` monta a mensagem com **Status, Executor, Local e Nº da requisição** e o resumo das alterações (de → para, responsável, data e observação). O mesmo conteúdo vira o texto no aplicativo e o corpo do e-mail.
+
+**E-mail.** O envio usa o `EmailProvider` (`nodemailer`) configurado por `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD` e `MAIL_FROM`. Com `MAIL_ENABLED=false` o envio não acontece e o registro fica com resultado `desativado`. Falhas de SMTP nunca interrompem a operação: o resultado (`enviado`, `falha` ou `desativado`) é apenas registrado.
+
+**Endpoints**
+
+```bash
+GET  /api/notificacoes                 # notificações do usuário (gestor: as endereçadas a ele)
+POST /api/requisicoes/:id/notificar-gestor   # corpo { "mensagem": "texto opcional" }
+GET  /api/comunicacoes                 # histórico de comunicações (gestor/admin)
+```
+
+`POST /requisicoes/:id/notificar-gestor` respeita a posse da requisição: o solicitante só avisa da própria requisição e o executor só da que está atribuído a ele (`404` caso contrário). Sem destinatário disponível a resposta é `400`.
+
+**Telas.** O menu **Notificações** (perfil gestor, rota `/notificacoes`) mostra a caixa de entrada com as notificações recebidas (clique abre a requisição, "marcar todas como lidas" limpa o contador do sino) e a tabela **Histórico de comunicações enviadas** com data, canal (`aplicacao`/`email`), destinatário, assunto, resultado e nº da requisição. O executor envia notificações pelo painel da requisição (bloco **Notificar gestor**).
+
+Em desenvolvimento o TypeORM cria as tabelas `notificacoes` e `comunicacoes`; em bancos já existentes a migration `1710000000003-GestorNotifications` adiciona `requisicoes.gestor_id` e as duas tabelas.
+
 ## Arquitetura do backend
 
 O fluxo principal de uma requisição segue estas camadas:
@@ -492,8 +493,10 @@ As principais tabelas atuais usam nomes físicos em português no MySQL:
 - `usuarios`: usuários, perfis, credenciais e controle de versão da sessão;
 - `locais`: locais de atendimento;
 - `categorias`: categorias de manutenção;
-- `requisicoes`: requisições, status, prioridade e dados de execução;
+- `requisicoes`: requisições, status, prioridade, gestor responsável (`gestor_id`) e dados de execução;
 - `historico_alteracoes`: log de auditoria do sistema (quem, o quê, quando e resultado), com o objeto auditado (`entidade`/`entidade_id`) e a ligação opcional com a requisição (`requisicao_id`);
+- `notificacoes`: notificações endereçadas ao gestor (destinatário, mensagem, status e quando foi criada);
+- `comunicacoes`: histórico do que foi enviado (canal aplicativo/e-mail, destinatário, assunto, conteúdo e resultado do envio);
 - `registros_execucao`: registros de execução salvos pelo executor;
 - `materiais_solicitacao`: materiais solicitados durante o atendimento.
 

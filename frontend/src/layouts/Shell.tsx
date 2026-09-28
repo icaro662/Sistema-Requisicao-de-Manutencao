@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import {
   BarChart3,
+  Bell,
   ClipboardList,
   LogOut,
   MapPin,
@@ -33,6 +34,7 @@ import LocationAdminPage from '../pages/LocationAdminPage';
 import CategoryAdminPage from '../pages/CategoryAdminPage';
 import SystemSettingsPage from '../pages/SystemSettingsPage';
 import AuditoriaPage from '../pages/AuditoriaPage';
+import NotificacoesPage from '../pages/NotificacoesPage';
 
 const formatTopbarDate = () =>
   new Date().toLocaleDateString('pt-BR', {
@@ -64,9 +66,10 @@ export default function Shell() {
     { to: '/executor', label: 'Painel do executor', icon: Wrench, roles: ['executor'] },
     { to: '/executor/execucoes', label: 'Histórico de execuções', icon: ClipboardList, roles: ['executor'] },
     { to: '/manager', label: 'Painel do gestor', icon: Users, roles: ['gestor'] },
+    { to: '/notificacoes', label: 'Notificações', icon: Bell, roles: ['gestor'] },
     { to: '/reports', label: 'Relatórios', icon: BarChart3, roles: ['gestor', 'admin'] },
-    { to: '/locais', label: 'Locais', icon: MapPin, roles: ['executor', 'gestor', 'admin'] },
-    { to: '/categorias', label: 'Categorias', icon: Tag, roles: ['executor', 'gestor', 'admin'] },
+    { to: '/locais', label: 'Locais', icon: MapPin, roles: ['admin'] },
+    { to: '/categorias', label: 'Categorias', icon: Tag, roles: ['admin'] },
     { to: '/users', label: 'Administração', icon: Users, roles: ['admin'] },
     { to: '/auditoria', label: 'Auditoria', icon: ScrollText, roles: ['admin'] },
     { to: '/configuracoes', label: 'Configurações', icon: Settings, roles: ['admin'] },
@@ -174,11 +177,14 @@ export default function Shell() {
               <Route path="/manager" element={<ManagerPage />} />
               <Route path="/reports" element={<ReportsPage />} />
             </Route>
+            <Route element={<RoleRoute roles={['gestor']} />}>
+              <Route path="/notificacoes" element={<NotificacoesPage />} />
+            </Route>
             <Route path="/locations" element={<ReferencePage type="locations" />} />
             <Route path="/categories" element={<ReferencePage type="categories" />} />
-            <Route path="/locais" element={<LocationAdminPage />} />
-            <Route path="/categorias" element={<CategoryAdminPage />} />
             <Route element={<RoleRoute roles={['admin']} />}>
+              <Route path="/locais" element={<LocationAdminPage />} />
+              <Route path="/categorias" element={<CategoryAdminPage />} />
               <Route path="/users" element={<AdminUsersPage />} />
               <Route path="/auditoria" element={<AuditoriaPage />} />
               <Route path="/configuracoes" element={<SystemSettingsPage />} />

@@ -248,6 +248,7 @@ interface RequisitionPlan {
   requesterEmail: string;
   requesterPhone: string;
   executorId: string | null;
+  gestorId: string | null;
   executionDescription: string | null;
   executionDate: Date | null;
   materialsUsed: string | null;
@@ -437,6 +438,7 @@ function buildPlan(
     requesterEmail: spec.requesterEmail,
     requesterPhone: people.requester.phone ?? '(11) 99999-0000',
     executorId: executor?.id ?? null,
+    gestorId: people.manager.id,
     executionDescription: execution?.executionDescription ?? null,
     executionDate: execution?.serviceDate ?? null,
     materialsUsed: execution?.materialsUsed ?? null,
@@ -461,6 +463,7 @@ async function insertPlan(plan: RequisitionPlan): Promise<void> {
     requesterEmail: plan.requesterEmail,
     requesterPhone: plan.requesterPhone,
     executorId: plan.executorId,
+    gestorId: plan.gestorId,
     executionDescription: plan.executionDescription,
     executionDate: plan.executionDate,
     materialsUsed: plan.materialsUsed,
@@ -561,7 +564,19 @@ async function seedRequisitions(usersByEmail: Map<string, User>): Promise<void> 
     );
   }
 
+  // Requisições já existentes (criadas antes do campo "Gestor") passam a ter
+  // gestor definido, para que as notificações cheguem a alguém.
+  const backfill = await requisitionsRepository
+    .createQueryBuilder()
+    .update(Requisition)
+    .set({ gestorId: manager.id })
+    .where('gestor_id IS NULL')
+    .execute();
+
   console.log(`\n${created} requisições criadas, ${skipped} já existentes (${REQUISITIONS_SEED.length} no total do seed).`);
+  if (backfill.affected) {
+    console.log(`${backfill.affected} requisição(ões) receberam o gestor "${manager.name}".`);
+  }
 }
 
 function writeCredentials(): void {

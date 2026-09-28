@@ -1,5 +1,5 @@
 import api from './api';
-import type { AuditFilters, AuditPage, CancelRequisitionInput, Category, CreateRequisitionInput, DashboardFilters, DashboardSummary, FinalizeRequisitionInput, Location, ManagedUserInput, Notification, Paginated, RegisterExecutionInput, RequestMaterial, ExecutionRecord, RequisitionHistoryEntry, ReportFilters, ReportResponse, Requisition, RequisitionQuery, RequisitionStatus, UpdateUserInput, User } from '../types';
+import type { AuditFilters, AuditPage, CancelRequisitionInput, Category, Communication, CreateRequisitionInput, DashboardFilters, DashboardSummary, FinalizeRequisitionInput, Location, ManagedUserInput, Notification, Paginated, RegisterExecutionInput, RequestMaterial, ExecutionRecord, RequisitionHistoryEntry, ReportFilters, ReportResponse, Requisition, RequisitionQuery, RequisitionStatus, UpdateUserInput, User } from '../types';
 
 interface UploadPhotoResponse { filename: string; path: string; mimetype: string; size: number }
 
@@ -40,7 +40,11 @@ export const maintenanceService = {
   updateCategory: (id: string, input: { name?: string; description?: string }) => api.patch<Category>(`/categorias/${id}`, input).then(({ data }) => data),
   deleteCategory: (id: string) => api.delete<{ id: string; removed: boolean }>(`/categorias/${id}`).then(({ data }) => data),
   executors: () => api.get<User[]>('/executores').then(({ data }) => data),
+  gestores: () => api.get<User[]>('/gestores').then(({ data }) => data),
   notifications: () => api.get<Notification[]>('/notificacoes').then(({ data }) => data),
+  notifyGestor: (id: string, input: { mensagem?: string } = {}) =>
+    api.post<Notification>(`/requisicoes/${id}/notificar-gestor`, input).then(({ data }) => data),
+  communications: () => api.get<Communication[]>('/comunicacoes').then(({ data }) => data),
   requestMaterials: (id: string) => api.get<RequestMaterial[]>(`/materiais/requisicao/${id}`).then(({ data }) => data),
   createRequestMaterial: (id: string, input: { materialsNeeded: string; reason: string }) => api.post<RequestMaterial>(`/materiais/requisicao/${id}`, input).then(({ data }) => data),
   executions: () => api.get<ExecutionRecord[]>('/execucoes').then(({ data }) => data),

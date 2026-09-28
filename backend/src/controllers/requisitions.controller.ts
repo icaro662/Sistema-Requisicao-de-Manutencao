@@ -9,6 +9,7 @@ import { CreateRequisitionDto } from '../dtos/requisitions/create-requisition.dt
 import { FilterRequisitionDto } from '../dtos/requisitions/filter-requisition.dto';
 import { FinalizeRequisitionDto } from '../dtos/requisitions/finalize-requisition.dto';
 import { RegisterExecutionDto } from '../dtos/requisitions/register-execution.dto';
+import { NotificarGestorDto } from '../dtos/requisitions/notify-gestor.dto';
 import { UpdateRequisitionDto } from '../dtos/requisitions/update-requisition.dto';
 import { UpdateStatusDto } from '../dtos/requisitions/update-status.dto';
 import { AtribuirExecutorDto } from '../dtos/executors/assign-executor.dto';
@@ -76,5 +77,11 @@ export class RequisitionsController {
   @Roles(UserRole.EXECUTOR, UserRole.MANAGER, UserRole.ADMIN)
   cancel(@Param('id') id: string, @Body() dto: CancelRequisitionDto, @CurrentUser() user: RequestUser) {
     return this.requisitionsService.cancel(id, dto, user.role, user.id);
+  }
+
+  /** Envia uma notificação (aplicativo + e-mail) ao gestor da requisição. */
+  @Post(':id/notificar-gestor')
+  notifyManager(@Param('id') id: string, @Body() dto: NotificarGestorDto, @CurrentUser() user: RequestUser) {
+    return this.requisitionsService.notifyManager(id, dto, user.role, user.id);
   }
 }

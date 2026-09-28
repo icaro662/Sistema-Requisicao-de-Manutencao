@@ -42,4 +42,9 @@ export class UpdateRequisitionDto {
 	@IsString()
 	@MaxLength(255)
 	photoUrl?: string;
+
+	/** Gestor responsável (recebe as notificações); null remove a definição. */
+	@IsOptional()
+	@IsUUID()
+	gestorId?: string | null;
 }

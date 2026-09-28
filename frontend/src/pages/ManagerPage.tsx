@@ -86,19 +86,43 @@ export default function ManagerPage() {
       </div>
     </div>
 
-    <section className="panel report-filters-panel">
-      <div className="panel-heading"><div><p className="eyebrow">Indicadores</p><h2>Filtrar painel</h2></div><Filter size={19} /></div>
-      <form className="report-filters" onSubmit={submitFilters}>
-        <label>Data inicial<input type="date" value={filters.from} onChange={(event) => setFilters({ ...filters, from: event.target.value })} /></label>
-        <label>Data final<input type="date" value={filters.to} onChange={(event) => setFilters({ ...filters, to: event.target.value })} /></label>
-        <label>Local<select value={filters.locationId} onChange={(event) => setFilters({ ...filters, locationId: event.target.value })}><option value="">Todos</option>{locationsQuery.data?.map((item: Location) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-        <label>Executor<select value={filters.executorId} onChange={(event) => setFilters({ ...filters, executorId: event.target.value })}><option value="">Todos</option>{executorsQuery.data?.map((item: User) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-        <label>Categoria<select value={filters.categoryId} onChange={(event) => setFilters({ ...filters, categoryId: event.target.value })}><option value="">Todas</option>{categoriesQuery.data?.map((item: Category) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-        <label>Prioridade<select value={filters.priority} onChange={(event) => setFilters({ ...filters, priority: event.target.value })}><option value="">Todas</option>{priorityOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-        <label>Status<select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}><option value="">Todos</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-        <div className="report-filter-actions"><button className="primary-button" type="submit"><Filter size={16} /> Aplicar filtros</button><button className="secondary-button" type="button" onClick={clearFilters}>Limpar</button></div>
-      </form>
-    </section>
+    <form className="toolbar report-toolbar" onSubmit={submitFilters}>
+      <div className="report-fields">
+        <label className="report-field">
+          <span>Data inicial</span>
+          <input type="date" value={filters.from} onChange={(event) => setFilters({ ...filters, from: event.target.value })} />
+        </label>
+        <label className="report-field">
+          <span>Data final</span>
+          <input type="date" value={filters.to} onChange={(event) => setFilters({ ...filters, to: event.target.value })} />
+        </label>
+        <label className="report-field">
+          <span>Local</span>
+          <select value={filters.locationId} onChange={(event) => setFilters({ ...filters, locationId: event.target.value })}><option value="">Todos</option>{locationsQuery.data?.map((item: Location) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+        </label>
+        <label className="report-field">
+          <span>Executor</span>
+          <select value={filters.executorId} onChange={(event) => setFilters({ ...filters, executorId: event.target.value })}><option value="">Todos</option>{executorsQuery.data?.map((item: User) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+        </label>
+        <label className="report-field">
+          <span>Categoria</span>
+          <select value={filters.categoryId} onChange={(event) => setFilters({ ...filters, categoryId: event.target.value })}><option value="">Todas</option>{categoriesQuery.data?.map((item: Category) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+        </label>
+        <label className="report-field">
+          <span>Prioridade</span>
+          <select value={filters.priority} onChange={(event) => setFilters({ ...filters, priority: event.target.value })}><option value="">Todas</option>{priorityOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select>
+        </label>
+        <label className="report-field">
+          <span>Status</span>
+          <select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}><option value="">Todos</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+        </label>
+      </div>
+
+      <div className="report-filter-actions">
+        <button className="primary-button compact" type="submit"><Filter size={15} /> Aplicar filtros</button>
+        <button className="secondary-button compact" type="button" onClick={clearFilters}>Limpar</button>
+      </div>
+    </form>
 
     <div className="metric-grid">
       <div className="metric-card">

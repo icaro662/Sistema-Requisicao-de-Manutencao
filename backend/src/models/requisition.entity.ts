@@ -46,6 +46,10 @@ export class Requisition {
   @Column({ name: 'executor_id', type: 'varchar', length: 36, nullable: true })
   executorId: string | null;
 
+  /** Gestor responsável pela requisição: destinatário das notificações. */
+  @Column({ name: 'gestor_id', type: 'varchar', length: 36, nullable: true })
+  gestorId: string | null;
+
   @Column({ name: 'descricao_execucao', type: 'text', nullable: true })
   executionDescription: string | null;
 
