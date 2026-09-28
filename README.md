@@ -117,6 +117,14 @@ DB_USERNAME=root
 DB_PASSWORD=sua-senha
 DB_NAME=maintenance_system
 DB_SYNCHRONIZE=true
+
+# SMTP
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USER=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_FROM=noreply@maintenance.com
+FRONTEND_URL=http://localhost:5173
 ```
 
 > **Nota:** `DB_SYNCHRONIZE=true` cria/atualiza as tabelas automaticamente em desenvolvimento. Em produção, defina como `false` e use migrations.
@@ -143,13 +151,6 @@ O seed é **idempotente** — registros existentes são ignorados, então pode s
 | **Locais** | 12 locais (Salas 101–301, Andar 1–2, Térreo, Subsolo, Cozinha, Banheiros) |
 | **Categorias** | 10 categorias de manutenção (Elétrica, Hidráulica, Mobiliário, Eletrônicos, Ar-condicionado, Pintura, Estrutural, Limpeza, Jardinagem, Segurança) |
 
-**Credenciais do administrador:**
-
-```text
-E-mail: admin@empresa.com
-Senha: Admin@123
-```
-
 ### 5.1 Seed de desenvolvimento (dados de demonstração)
 
 ```bash
@@ -165,21 +166,6 @@ Também é **idempotente** (registros já existentes são ignorados) e popula o 
 | **12 requisições** | Abertas por solicitantes diferentes e atribuídas a executores diferentes, cobrindo todos os status: `aberta`, `em_analise`, `em_atendimento`, `aguardando_material`, `concluida` e `cancelada` |
 | **Linha do tempo** | Histórico de cada requisição (criação, atribuição, mudanças de status, execução e cancelamento), com data e responsável |
 | **Execuções e materiais** | Registros de execução das requisições concluídas e uma solicitação de material pendente |
-
-**Credenciais de desenvolvimento** (gravadas em `backend/tmp/dev-credentials.txt`):
-
-```text
-admin:       admin@dev.com / Admin@123
-gestor:      gestor@dev.com / Gestor@123
-executor:    executor@dev.com / Executor@123
-executor:    executor2@dev.com / Executor2@123
-executor:    executor3@dev.com / Executor3@123
-solicitante: solicitante@dev.com / Solicitante@123
-solicitante: solicitante2@dev.com / Solicitante2@123
-solicitante: solicitante3@dev.com / Solicitante3@123
-```
-
-As requisições de demonstração são reconhecidas pela descrição e a numeração segue a mesma regra da API (total de requisições + 1), então rodar o seed não quebra a sequência `REQ-0000X`.
 
 ### 6. Executar
 
@@ -236,123 +222,6 @@ O frontend ficará disponível em `http://localhost:5173`.
 
 ---
 
-## Executando o projeto completo
-
-1. **MySQL** — certifique-se de que o banco está rodando e acessível.
-2. **Backend** — em um terminal: `cd backend && npm run start:dev`
-3. **Frontend** — em outro terminal: `cd frontend && npm run dev`
-4. **Acessar** — abra `http://localhost:5173` no navegador.
-5. **Login** — use `admin@empresa.com` / `Admin@123` (se executou o seed).
-
-## Configuração do backend
-
-Entre na pasta do backend e instale as dependências:
-
-```bash
-cd backend
-npm install
-```
-
-Crie o arquivo de ambiente a partir do exemplo:
-
-```bash
-cp src/config/.env.example src/config/.env
-```
-
-No Windows PowerShell, use:
-
-```powershell
-Copy-Item src/config/.env.example src/config/.env
-```
-
-Ajuste as credenciais do MySQL em `backend/src/config/.env`:
-
-```env
-NODE_ENV=development
-PORT=3000
-JWT_SECRET=change-me
-JWT_EXPIRES_IN=24h
-DB_HOST=localhost
-DB_PORT=3306
-DB_USERNAME=root
-DB_PASSWORD=
-DB_NAME=maintenance_system
-DB_SYNCHRONIZE=true
-```
-
-Crie o banco antes de iniciar a API:
-
-```sql
-CREATE DATABASE maintenance_system;
-```
-
-Para desenvolvimento, `DB_SYNCHRONIZE=true` permite que o TypeORM sincronize as entidades com o banco. Em produção, prefira migrations e mantenha essa opção desativada.
-
-### Seed do administrador inicial
-
-Com o banco criado e o arquivo `.env` configurado, execute no diretório `backend/`:
-
-```bash
-npm run seed
-```
-
-O seed é idempotente. Na primeira execução, cria automaticamente:
-
-```text
-E-mail: admin@empresa.com
-Senha: Admin@123
-```
-
-As credenciais são exibidas no console. Se o administrador já existir, o seed não altera a senha atual.
-
-## Configuração do frontend
-
-Em outro terminal, entre na pasta do frontend e instale as dependências:
-
-```bash
-cd frontend
-npm install
-```
-
-O frontend já usa o proxy do Vite para encaminhar `/api` para `http://localhost:3000`. Essa é a configuração recomendada para desenvolvimento local.
-
-Se precisar apontar diretamente para outro endereço da API, copie o arquivo de exemplo:
-
-```bash
-cp .env.example .env
-```
-
-Defina a URL desejada:
-
-```env
-VITE_API_URL=http://localhost:3000/api
-```
-
-## Executar localmente
-
-### 1. Iniciar a API
-
-No diretório `backend/`:
-
-```bash
-npm run start:dev
-```
-
-A API ficará disponível em:
-
-- Base da API: `http://localhost:3000/api`
-- Health check: `GET http://localhost:3000/api/health`
-
-### 2. Iniciar o painel web
-
-No diretório `frontend/`:
-
-```bash
-npm run dev
-```
-
-O frontend ficará disponível em `http://localhost:5173`.
-
 ## Comandos úteis
 
 ### Backend
@@ -374,17 +243,6 @@ npm run dev         # Inicia o servidor Vite
 npm run build       # Verifica os tipos e gera o build de produção
 npm run preview     # Serve o build localmente para validação
 ```
-
-## Primeiro acesso do cliente
-
-1. Execute `npm run seed` na pasta `backend/`.
-2. Inicie backend e frontend.
-3. Entre no painel com `admin@empresa.com` e `Admin@123`.
-4. Acesse **Administração** → **Usuários**.
-5. Altere a senha do próprio administrador para uma senha segura.
-6. Crie os acessos necessários, escolhendo entre `Solicitante`, `Executor` e `Gestor`.
-
-
 ## Estrutura de pastas
 
 ```text
@@ -429,8 +287,6 @@ O frontend está conectado aos endpoints atualmente implementados para:
 - cadastro de categorias de manutenção (listar, criar, editar e excluir);
 - consulta de executores.
 
-O login e o registro emitem access e refresh tokens. O frontend envia o access token nas requisições protegidas e tenta renová-lo automaticamente quando ele expira. O refresh token é rotacionado a cada renovação e o token anterior é invalidado.
-
 ## Auditoria
 
 A tabela `historico_alteracoes` é o log de auditoria do sistema. Cada registro responde às quatro perguntas do checklist:
@@ -450,20 +306,6 @@ O que é auditado:
 - usuários: criação (inclusive cadastro público), atualização (com o detalhe do que mudou, ex.: `perfil de executor para gestor`) e redefinição de senha;
 - locais e categorias: criação, atualização e exclusão;
 - operações com erro: o filtro global de exceções registra `Falha em <MÉTODO> <rota> (HTTP <status>): <mensagem>` com `resultado = falha` nas requisições autenticadas.
-
-Login e logout ficam de fora da auditoria: abrir e encerrar sessão não é uma operação sobre o negócio, e uma falha de login não tem "quem" autenticado a registrar.
-
-Endpoint (somente administrador):
-
-```bash
-GET /api/auditoria?usuario=&acao=&entidade=&resultado=&de=&ate=&requisicaoId=&page=1&limit=10
-```
-
-A resposta é `{ data, total, page, limit }`. Os filtros são opcionais; `de`/`ate` aceitam `YYYY-MM-DD` e um intervalo invertido retorna `400`. Sem `limit` a API responde 10 registros por página (teto de 100).
-
-A tela **Auditoria** (menu lateral, perfil administrador, rota `/auditoria`) aplica esses filtros, mostra Quando, Quem, Operação, Objeto e Resultado, pagina os registros em **10 por página** e abre o histórico completo da requisição ligada ao evento em um painel com a linha do tempo.
-
-Em desenvolvimento a tabela é sincronizada pelo TypeORM; em bancos já existentes a migration `1710000000002-AuditLogColumns` torna `requisicao_id` opcional e adiciona as colunas de auditoria e os índices de consulta.
 
 ## Arquitetura do backend
 
@@ -496,8 +338,6 @@ As principais tabelas atuais usam nomes físicos em português no MySQL:
 - `historico_alteracoes`: log de auditoria do sistema (quem, o quê, quando e resultado), com o objeto auditado (`entidade`/`entidade_id`) e a ligação opcional com a requisição (`requisicao_id`);
 - `registros_execucao`: registros de execução salvos pelo executor;
 - `materiais_solicitacao`: materiais solicitados durante o atendimento.
-
-As propriedades TypeScript e os contratos HTTP continuam em inglês para preservar a compatibilidade com o frontend. Apenas os nomes físicos das tabelas e colunas do banco foram traduzidos.
 
 Em um banco já existente, a alteração dos nomes requer uma migration ou a recriação do schema. Em desenvolvimento, `DB_SYNCHRONIZE=true` permite que o TypeORM sincronize o modelo configurado.
 
