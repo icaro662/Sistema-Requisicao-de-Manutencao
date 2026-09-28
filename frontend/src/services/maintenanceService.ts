@@ -1,5 +1,5 @@
 import api from './api';
-import type { Category, CreateRequisitionInput, DashboardFilters, DashboardSummary, Location, ManagedUserInput, Notification, Paginated, RegisterExecutionInput, RequestMaterial, ExecutionRecord , ReportFilters, ReportResponse, Requisition, RequisitionQuery, RequisitionStatus, UpdateUserInput, User } from '../types';
+import type { AuditFilters, AuditPage, CancelRequisitionInput, Category, CreateRequisitionInput, DashboardFilters, DashboardSummary, FinalizeRequisitionInput, Location, ManagedUserInput, Notification, Paginated, RegisterExecutionInput, RequestMaterial, ExecutionRecord, RequisitionHistoryEntry, ReportFilters, ReportResponse, Requisition, RequisitionQuery, RequisitionStatus, UpdateUserInput, User } from '../types';
 
 interface UploadPhotoResponse { filename: string; path: string; mimetype: string; size: number }
 
@@ -24,6 +24,10 @@ export const maintenanceService = {
   registerExecution: (id: string, input: RegisterExecutionInput) => api.post<ExecutionRecord>(`/execucoes/requisicao/${id}`, input).then(({ data }) => data),
   addObservation: (id: string, observation: string) => api.post<Requisition>(`/execucoes/requisicao/${id}/observacao`, { observacao: observation }).then(({ data }) => data),
   executionHistory: (id: string) => api.get<ExecutionRecord[]>(`/execucoes/requisicao/${id}`).then(({ data }) => data),
+  requisitionHistory: (id: string) => api.get<RequisitionHistoryEntry[]>(`/requisicoes/${id}/historico`).then(({ data }) => data),
+  auditoria: (params?: AuditFilters) => api.get<AuditPage>('/auditoria', { params }).then(({ data }) => data),
+  finalizeRequisition: (id: string, input: FinalizeRequisitionInput = {}) => api.post<Requisition>(`/requisicoes/${id}/finalizar`, input).then(({ data }) => data),
+  cancelRequisition: (id: string, input: CancelRequisitionInput = {}) => api.post<Requisition>(`/requisicoes/${id}/cancelar`, input).then(({ data }) => data),
   users: () => api.get<Paginated<User>>('/usuarios').then(({ data }) => data),
   createUser: (input: ManagedUserInput) => api.post<User>('/usuarios', input).then(({ data }) => data),
   updateUser: (id: string, input: UpdateUserInput) => api.patch<User>(`/usuarios/${id}`, input).then(({ data }) => data),
