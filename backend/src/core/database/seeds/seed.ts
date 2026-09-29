@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import { resolve } from 'path';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { DataSource } from 'typeorm';
 import { hash } from 'bcrypt';
 import { Category } from '../../../models/category.entity';
@@ -65,6 +66,18 @@ async function seedAdmin(): Promise<void> {
   const reference = await ensureReferenceData(dataSource);
   console.log(`${LOCATIONS_SEED.length} locais populados (${reference.locationsCreated} novos).`);
   console.log(`${CATEGORIES_SEED.length} categorias populadas (${reference.categoriesCreated} novas).`);
+
+  writeCredentials();
+}
+
+function writeCredentials(): void {
+  const tmpDir = resolve(process.cwd(), 'tmp');
+  mkdirSync(tmpDir, { recursive: true });
+
+  const credentials = `${UserRole.ADMIN}: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`;
+  writeFileSync(resolve(tmpDir, 'admin-credentials.txt'), credentials, 'utf-8');
+
+  console.log('\nCredentials written to: tmp/admin-credentials.txt');
 }
 
 seedAdmin()
