@@ -8,8 +8,6 @@ services:
       MYSQL_DATABASE: ${DB_NAME:?DB_NAME is required}
       MYSQL_USER: ${DB_USERNAME:?DB_USERNAME is required}
       MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-    ports:
-      - "${DB_PORT:-3306}:3306"
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -17,22 +15,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - app_network
-
-  migration:
-    build:
-      context: ../backend
-      dockerfile: docker/Dockerfile
-    command:
-      - node
-      - node_modules/.bin/typeorm
-      - migration:run
-      - -d
-      - dist/core/database/data-source.js
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - app_network
 
@@ -63,6 +45,24 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - app_network 
+      
+  migration:
+    build:
+      context: ../backend
+      dockerfile: docker/Dockerfile
+    command:
+      - node
+      - node_modules/.bin/typeorm
+      - migration:run
+      - -d
+      - dist/core/database/data-source.js
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
     networks:
       - app_network
 
