@@ -162,6 +162,7 @@ Também é **idempotente** (registros já existentes são ignorados) e popula o 
 | **Linha do tempo** | Histórico de cada requisição (criação, atribuição, mudanças de status, execução e cancelamento), com data e responsável |
 | **Execuções e materiais** | Registros de execução das requisições concluídas e uma solicitação de material pendente |
 
+(As credenciais geradas por ambas seeds são salvas em backend/tmp.)
 
 ### 6. Executar
 
