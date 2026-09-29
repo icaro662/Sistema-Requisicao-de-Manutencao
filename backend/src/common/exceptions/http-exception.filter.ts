@@ -12,18 +12,32 @@ import { RequestUser } from '../interfaces/request-user.interface';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
-  constructor(private readonly historyService: HistoryService) {}
+  constructor(
+    private readonly historyService: HistoryService,
+  ) { }
 
-  catch(exception: unknown, host: ArgumentsHost): void {
+  async catch(exception: unknown, host: ArgumentsHost): Promise<void> {
     const context = host.switchToHttp();
+
     const response = context.getResponse<Response>();
-    const request = context.getRequest<Request & { user?: RequestUser }>();
-    const status = exception instanceof HttpException
-      ? exception.getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
-    const exceptionResponse = exception instanceof HttpException
-      ? exception.getResponse()
-      : 'Internal server error';
+    const request =
+      context.getRequest<Request & { user?: RequestUser }>();
+
+    const status =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const exceptionResponse =
+      exception instanceof HttpException
+        ? exception.getResponse()
+        : 'Internal server error';
+
+    await this.recordFailure(
+      request,
+      status,
+      exceptionResponse,
+    );
 
     response.status(status).json({
       statusCode: status,
@@ -31,29 +45,30 @@ export class HttpExceptionFilter implements ExceptionFilter {
       path: request.url,
       error: exceptionResponse,
     });
-
-    this.recordFailure(request, status, exceptionResponse);
   }
-
   /**
    * Registra no log de auditoria as operações que falharam (Resultado = falha).
    * Sem usuário autenticado (token inválido/expirado, login) não há "Quem",
    * então o evento não é auditado.
    */
-  private recordFailure(
+  private async recordFailure(
     request: Request & { user?: RequestUser },
     status: number,
     exceptionResponse: unknown,
-  ): void {
+  ): Promise<void> {
     const user = request.user;
+
     if (!user || status < 400) return;
 
     const method = request.method ?? 'REQUEST';
     const path = request.url ?? '';
     const message = this.describeException(exceptionResponse);
-    const description = `Falha em ${method} ${path} (HTTP ${status}): ${message}`.slice(0, 500);
 
-    void this.historyService.record({
+    const description =
+      `Falha em ${method} ${path} (HTTP ${status}): ${message}`
+        .slice(0, 500);
+
+    await this.historyService.record({
       entityType: AuditEntity.SYSTEM,
       userId: user.id,
       action: HistoryAction.OPERATION_FAILED,
