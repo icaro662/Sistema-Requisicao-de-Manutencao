@@ -21,49 +21,52 @@ export class ExecutionRecordsPasswordReset1710000000004 implements MigrationInte
   name = 'ExecutionRecordsPasswordReset1710000000004';
 
   async up(queryRunner: QueryRunner): Promise<void> {
-    await this.createTableIfMissing(queryRunner, new Table({
-      name: 'registros_execucao',
-      columns: [
-        { name: 'id', type: 'varchar', length: '36', isPrimary: true },
-        { name: 'requisicao_id', type: 'varchar', length: '255' },
-        { name: 'executor_id', type: 'varchar', length: '255' },
-        { name: 'executor_nome', type: 'varchar', length: '255' },
-        { name: 'descricao_execucao', type: 'text' },
-        { name: 'data_atendimento', type: 'datetime' },
-        { name: 'materiais_utilizados', type: 'text', isNullable: true },
-        { name: 'observacoes', type: 'text', isNullable: true },
-        { name: 'foto_url', type: 'varchar', length: '255', isNullable: true },
-        { name: 'criado_em', type: 'datetime', precision: 6, default: 'CURRENT_TIMESTAMP(6)' },
-        {
-          name: 'atualizado_em',
-          type: 'datetime',
-          precision: 6,
-          default: 'CURRENT_TIMESTAMP(6)',
-          onUpdate: 'CURRENT_TIMESTAMP(6)',
-        },
-      ],
-      foreignKeys: [this.requisitionForeignKey('FK_677287e73afb5dd79af7743c5a4')],
-    }));
+    if (!(await queryRunner.hasTable('registros_execucao'))) {
+      await queryRunner.query(`
+        CREATE TABLE registros_execucao (
+          id varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+          requisicao_id varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+          executor_id varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+          executor_nome varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+          descricao_execucao text COLLATE utf8mb4_unicode_ci NOT NULL,
+          data_atendimento datetime NOT NULL,
+          materiais_utilizados text COLLATE utf8mb4_unicode_ci NULL,
+          observacoes text COLLATE utf8mb4_unicode_ci NULL,
+          foto_url varchar(255) COLLATE utf8mb4_unicode_ci NULL,
+          criado_em datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+          atualizado_em datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+          CONSTRAINT FK_677287e73afb5dd79af7743c5a4
+            FOREIGN KEY (requisicao_id)
+            REFERENCES requisicoes (id)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION,
+          PRIMARY KEY (id)
+        ) ENGINE=InnoDB
+          DEFAULT CHARSET=utf8mb4
+          COLLATE=utf8mb4_unicode_ci
+      `);
+    }
 
-    await this.createTableIfMissing(queryRunner, new Table({
-      name: 'materiais_solicitacao',
-      columns: [
-        { name: 'id', type: 'varchar', length: '36', isPrimary: true },
-        { name: 'requisicao_id', type: 'varchar', length: '255' },
-        { name: 'material_necessario', type: 'text' },
-        { name: 'motivo', type: 'text', isNullable: true },
-        { name: 'criado_em', type: 'datetime', precision: 6, default: 'CURRENT_TIMESTAMP(6)' },
-        {
-          name: 'atualizado_em',
-          type: 'datetime',
-          precision: 6,
-          default: 'CURRENT_TIMESTAMP(6)',
-          onUpdate: 'CURRENT_TIMESTAMP(6)',
-        },
-      ],
-      foreignKeys: [this.requisitionForeignKey('FK_e1151d900c22318d371543157b7')],
-    }));
-
+    if (!(await queryRunner.hasTable('materiais_solicitacao'))) {
+      await queryRunner.query(`
+        CREATE TABLE materiais_solicitacao (
+          id varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+          requisicao_id varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+          material_necessario text COLLATE utf8mb4_unicode_ci NOT NULL,
+          motivo text COLLATE utf8mb4_unicode_ci NULL,
+          criado_em datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+          atualizado_em datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+          CONSTRAINT FK_e1151d900c22318d371543157b7
+            FOREIGN KEY (requisicao_id)
+            REFERENCES requisicoes (id)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION,
+          PRIMARY KEY (id)
+        ) ENGINE=InnoDB
+          DEFAULT CHARSET=utf8mb4
+          COLLATE=utf8mb4_unicode_ci
+      `);
+    }
     const users = await queryRunner.getTable('usuarios');
     if (users && !users.columns.some((column) => column.name === 'token_reset_senha')) {
       await queryRunner.addColumn('usuarios', new TableColumn({

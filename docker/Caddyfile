@@ -1,0 +1,19 @@
+# Caddy reverse proxy for Maintenance System
+# Routes API requests to backend, everything else to frontend
+
+:80 {
+    # API requests -> backend
+    handle /api/* {
+        reverse_proxy backend:3000
+    }
+
+    # Backend health check
+    handle /health {
+        reverse_proxy backend:3000
+    }
+
+    # Everything else -> frontend (React SPA)
+    handle {
+        reverse_proxy frontend:80
+    }
+}
