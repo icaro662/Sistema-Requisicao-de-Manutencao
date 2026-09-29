@@ -52,17 +52,27 @@ services:
     build:
       context: ../backend
       dockerfile: docker/Dockerfile
+
     command:
       - node
       - node_modules/.bin/typeorm
       - migration:run
       - -d
       - dist/core/database/data-source.js
+
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME is required}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_NAME: ${DB_NAME:?DB_NAME is required}
+      DB_SYNCHRONIZE: "false"
+
     depends_on:
       db:
         condition: service_healthy
-      backend:
-        condition: service_started
+
     networks:
       - app_network
 
