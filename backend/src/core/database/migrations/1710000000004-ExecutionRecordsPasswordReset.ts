@@ -25,7 +25,7 @@ export class ExecutionRecordsPasswordReset1710000000004 implements MigrationInte
       name: 'registros_execucao',
       columns: [
         { name: 'id', type: 'varchar', length: '36', isPrimary: true },
-        { name: 'requisicao_id', type: 'varchar', length: '255' },
+        { name: 'requisicao_id', type: 'varchar', length: '36' },
         { name: 'executor_id', type: 'varchar', length: '255' },
         { name: 'executor_nome', type: 'varchar', length: '255' },
         { name: 'descricao_execucao', type: 'text' },
@@ -49,7 +49,7 @@ export class ExecutionRecordsPasswordReset1710000000004 implements MigrationInte
       name: 'materiais_solicitacao',
       columns: [
         { name: 'id', type: 'varchar', length: '36', isPrimary: true },
-        { name: 'requisicao_id', type: 'varchar', length: '255' },
+        { name: 'requisicao_id', type: 'varchar', length: '36' },
         { name: 'material_necessario', type: 'text' },
         { name: 'motivo', type: 'text', isNullable: true },
         { name: 'criado_em', type: 'datetime', precision: 6, default: 'CURRENT_TIMESTAMP(6)' },
