@@ -1,0 +1,108 @@
+/* Timeline do histórico de alterações */
+.history-timeline {
+    position: relative;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.history-timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--line);
+}
+.history-timeline li {
+    position: relative;
+    padding: 0 0 20px 26px;
+}
+.history-timeline li:last-child {
+    padding-bottom: 0;
+}
+.history-timeline .timeline-dot {
+    position: absolute;
+    left: 0;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--teal);
+    box-shadow: 0 0 0 2px var(--teal);
+}
+.history-timeline li:last-child .timeline-dot {
+    background: var(--navy);
+    box-shadow: 0 0 0 2px var(--navy);
+}
+.history-timeline strong {
+    display: block;
+    color: var(--ink);
+    font-size: 13px;
+}
+.history-timeline p {
+    margin: 4px 0 6px;
+    color: #52656c;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+.history-timeline .timeline-meta {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+}
+.history-timeline .timeline-meta b {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+/* Fotos antes e depois da manutenção */
+.before-after {
+    margin-top: 24px;
+}
+.before-after-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 10px;
+}
+.before-after-grid figure {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+}
+.before-after-grid .photo-frame {
+    display: block;
+    aspect-ratio: 4 / 3;
+    background: #f2f5f4;
+}
+.before-after-grid img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.before-after-grid .photo-missing {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 8px;
+    height: 100%;
+    padding: 12px;
+    color: #9aa8a8;
+    font-size: 12px;
+    text-align: center;
+}
+.before-after-grid figcaption {
+    padding: 9px 12px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}

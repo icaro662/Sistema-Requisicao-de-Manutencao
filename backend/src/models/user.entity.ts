@@ -7,35 +7,53 @@ export enum UserRole {
   ADMIN = 'admin',
 }
 
-@Entity('users')
+@Entity('usuarios')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ name: 'nome' })
   name: string;
 
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  @Column({ name: 'senha' })
   password: string;
 
-  @Column({ nullable: true })
+  @Column({
+    name: 'telefone',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
   phone: string | null;
 
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.REQUESTER })
+  @Column({ name: 'perfil', type: 'enum', enum: UserRole, default: UserRole.REQUESTER })
   role: UserRole;
 
-  @Column({ name: 'location_id', nullable: true })
+  @Column({
+    name: 'local_id',
+    type: 'varchar',
+    nullable: true,
+  })
   locationId: string | null;
 
-  @Column({ name: 'is_active', default: true })
+  @Column({ name: 'ativo', default: true })
   isActive: boolean;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @Column({ name: 'versao_token', type: 'int', default: 0 })
+  tokenVersion: number;
+
+  @Column({ name: 'token_reset_senha', type: 'varchar', length: 64, nullable: true })
+  passwordResetToken: string | null;
+
+  @Column({ name: 'token_reset_expira', type: 'datetime', nullable: true })
+  passwordResetExpires: Date | null;
+
+  @CreateDateColumn({ name: 'criado_em' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'atualizado_em' })
   updatedAt: Date;
 }

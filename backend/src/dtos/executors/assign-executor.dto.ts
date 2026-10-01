@@ -1,2 +1,2 @@
 import { IsUUID } from 'class-validator';
-export class AssignExecutorDto { @IsUUID() executorId: string; }
+export class AtribuirExecutorDto { @IsUUID() executorId: string; }
