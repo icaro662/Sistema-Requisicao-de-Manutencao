@@ -1,12 +1,12 @@
-import { useAuthStore } from './store/authStore';
+import { useAuthStore } from '../store/authStore';
 import { Navigate, Routes, Route } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import Shell from './layouts/Shell';
-import ProtectedLayout from './layouts/ProtectedLayout';
-import PublicOnlyRoute from './components/PublicOnlyRoute';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
+import LoginPage from '../pages/LoginPage';
+import RegisterPage from '../pages/RegisterPage';
+import Shell from '../layouts/Shell';
+import ProtectedLayout from '../layouts/ProtectedLayout';
+import PublicOnlyRoute from '../components/PublicOnlyRoute';
+import ForgotPasswordPage from '../pages/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/ResetPasswordPage';
 
 function App() {
   const authenticated = useAuthStore((state) => Boolean(state.sessionEmail));
