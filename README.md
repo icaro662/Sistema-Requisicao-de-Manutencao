@@ -2,7 +2,7 @@
 
 > **Operações de manutenção** | Requisições · Usuários · Locais · Categorias · Dashboard
 
-Este é um sistema web para registrar, acompanhar e organizar requisições de manutenção. A aplicação combina uma API REST em NestJS com um painel operacional em React, permitindo que equipes consultem requisições, acompanhem status e visualizem informações de operação em um único ambiente.
+Este é um sistema web para registrar, acompanhar e organizar requisições de manutenção. A aplicação combina uma API REST em NestJS com um painel operacional em React, permitindo que equipes consultem requisições, acompanhem status e visualizem informações de operação em um único ambiente. Feito em um fim de semana, parte de uma atividade do curso Técnico de informática para internet do Senai.
 
 ## Objetivo
 
